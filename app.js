@@ -229,28 +229,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     return res;
                 };
 
-                // Pick the 3-star set
-                let mySet = [];
-                const r = Math.random();
-                const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
-                const seed = getRandom(seedArr, 1)[0];
-                mySet.push(seed);
-                const correlations = currentCorrelatedPairs[seed] || [];
-                if (correlations.length > 0 && Math.random() > 0.3) {
-                    mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
-                } else {
-                    mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
-                }
-                while (mySet.length < 3) {
-                    let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
-                    if (mySet.includes(candidate)) continue;
-                    const val = parseInt(candidate);
-                    if (currentPatternBias.big > 0.6 && val <= 40 && Math.random() > 0.4) continue;
-                    if (currentPatternBias.odd > 0.6 && val % 2 === 0 && Math.random() > 0.4) continue;
-                    mySet.push(candidate);
-                }
+                let attempt = 0;
+                while (attempt < 20) {
+                    attempt++;
+                    let mySet = [];
+                    const r = Math.random();
+                    const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
+                    const seed = getRandom(seedArr, 1)[0];
+                    mySet.push(seed);
+                    const correlations = currentCorrelatedPairs[seed] || [];
+                    if (correlations.length > 0 && Math.random() > 0.3) {
+                        mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
+                    } else {
+                        mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
+                    }
+                    while (mySet.length < 3) {
+                        let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
+                        if (mySet.includes(candidate)) continue;
+                        const val = parseInt(candidate);
+                        if (currentPatternBias.big > 0.6 && val <= 40 && Math.random() > 0.4) continue;
+                        if (currentPatternBias.odd > 0.6 && val % 2 === 0 && Math.random() > 0.4) continue;
+                        mySet.push(candidate);
+                    }
 
-                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
+                    // V6 Advanced Filtering
+                    const nums = mySet.map(n => parseInt(n)).sort((a, b) => a - b);
+                    // 1. Exclude 3-consecutive
+                    if (nums[1] - nums[0] === 1 && nums[2] - nums[1] === 1) continue;
+                    // 2. Exclude same last digit
+                    if (nums[0] % 10 === nums[1] % 10 && nums[1] % 10 === nums[2] % 10) continue;
+                    // 3. Balance pool (ensure we have at least 1 "Hot" and 1 "Trend/Due")
+                    const hasHot = mySet.some(n => currentHotNums.includes(n));
+                    const hasOther = mySet.some(n => currentDueNums.includes(n) || currentTrendNums.includes(n));
+                    if (!hasHot || !hasOther) continue;
+
+                    return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
+                }
+                return { set: getRandom(currentHotNums, 3).sort((a, b) => parseInt(a) - parseInt(b)) };
             };
 
             const targetBase = parseInt(currentLatestDraw.period);
@@ -351,47 +366,59 @@ document.addEventListener('DOMContentLoaded', () => {
                     return res;
                 };
 
-                let mySet = [];
-                // V5 Strategy: Focus on correlations between HOT numbers
-                let chosenPair = [];
+                let attempt = 0;
+                while (attempt < 50) {
+                    attempt++;
+                    let mySet = [];
+                    let chosenPair = [];
 
-                // Prioritize hot numbers to start the pair
-                const hotKeys = currentHotNums.length > 0 ? [...currentHotNums].sort(() => Math.random() - 0.5) : Object.keys(currentCorrelatedPairs).sort(() => Math.random() - 0.5);
+                    // Prioritize hot numbers to start the pair
+                    const hotKeys = currentHotNums.length > 0 ? [...currentHotNums].sort(() => Math.random() - 0.5) : Object.keys(currentCorrelatedPairs).sort(() => Math.random() - 0.5);
 
-                for (let k of hotKeys) {
-                    const correlations = currentCorrelatedPairs[k];
-                    if (correlations && correlations.length > 0) {
-                        chosenPair = [k, correlations[0]];
-                        if (Math.random() > 0.4 && correlations.length > 1) chosenPair[1] = correlations[1];
-                        break;
+                    for (let k of hotKeys) {
+                        const correlations = currentCorrelatedPairs[k];
+                        if (correlations && correlations.length > 0) {
+                            chosenPair = [k, correlations[0]];
+                            if (Math.random() > 0.4 && correlations.length > 1) chosenPair[1] = correlations[1];
+                            break;
+                        }
                     }
+
+                    if (chosenPair.length === 2) {
+                        mySet = [...chosenPair];
+                    } else {
+                        mySet = getRandom(currentHotNums, 2);
+                    }
+
+                    // 3. Fill the 3rd number from Due or Trend lists with strict pattern checking
+                    while (mySet.length < 3) {
+                        let pool = [...currentDueNums, ...currentTrendNums];
+                        let candidate = pool[Math.floor(Math.random() * pool.length)];
+                        if (mySet.includes(candidate)) continue;
+
+                        const val = parseInt(candidate);
+                        const isBig = val > 40;
+                        const isOdd = val % 2 !== 0;
+
+                        let pass = true;
+                        // V5 applies stricter pattern weights (80% match rate)
+                        if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.2) pass = false;
+                        if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.2) pass = false;
+
+                        if (pass) mySet.push(candidate);
+                    }
+
+                    // V6 Advanced Filtering
+                    const nums = mySet.map(n => parseInt(n)).sort((a, b) => a - b);
+                    if (nums[1] - nums[0] === 1 && nums[2] - nums[1] === 1) continue;
+                    if (nums[0] % 10 === nums[1] % 10 && nums[1] % 10 === nums[2] % 10) continue;
+                    const hasHot = mySet.some(n => currentHotNums.includes(n));
+                    const hasOther = mySet.some(n => currentDueNums.includes(n) || currentTrendNums.includes(n));
+                    if (!hasHot || !hasOther) continue;
+
+                    return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
                 }
-
-                if (chosenPair.length === 2) {
-                    mySet = [...chosenPair];
-                } else {
-                    mySet = getRandom(currentHotNums, 2);
-                }
-
-                // 3. Fill the 3rd number from Due or Trend lists with strict pattern checking
-                while (mySet.length < 3) {
-                    let pool = [...currentDueNums, ...currentTrendNums];
-                    let candidate = pool[Math.floor(Math.random() * pool.length)];
-                    if (mySet.includes(candidate)) continue;
-
-                    const val = parseInt(candidate);
-                    const isBig = val > 40;
-                    const isOdd = val % 2 !== 0;
-
-                    let pass = true;
-                    // V5 applies stricter pattern weights (80% match rate)
-                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.2) pass = false;
-                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.2) pass = false;
-
-                    if (pass) mySet.push(candidate);
-                }
-
-                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
+                return { set: getRandom(currentHotNums, 3).sort((a, b) => parseInt(a) - parseInt(b)) };
             };
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -402,6 +429,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let win3Count = 0;
             let win2Count = 0;
             let winSuperCount = 0;
+            let currentProfit = 0;
+            let equityCurve = [0];
 
             // Simulate "1 set chase 10 draws" strategy throughout the day
             // We process data from oldest to newest for a realistic simulation of the day
@@ -412,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Charge for the full 10-draw pre-paid bundle (25 per draw)
                 totalCost += 10 * 25 * mult;
+                currentProfit -= 10 * 25 * mult;
 
                 for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
                     const draw = dailyDraws[i + j];
@@ -424,9 +454,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (matches === 3) {
                         totalWin += 500 * mult;
                         win3Count++;
+                        currentProfit += 500 * mult;
                     } else if (matches === 2) {
                         totalWin += 50 * mult;
                         win2Count++;
+                        currentProfit += 50 * mult;
                     }
 
                     if (actualSuper && strat.set.includes(actualSuper)) {
@@ -434,21 +466,51 @@ document.addEventListener('DOMContentLoaded', () => {
                         winSuperCount++;
                     }
                 }
+                equityCurve.push(currentProfit);
             }
 
             const net = totalWin - totalCost;
             const netColor = net >= 0 ? '#00ff00' : '#ff4b4b';
 
+            // Generate Equity Curve Chart (SVG)
+            const chartW = 400;
+            const chartH = 100;
+            const maxP = Math.max(...equityCurve, 1000);
+            const minP = Math.min(...equityCurve, -1000);
+            const range = maxP - minP;
+            const getX = (idx) => (idx / (equityCurve.length - 1)) * chartW;
+            const getY = (val) => chartH - ((val - minP) / range) * chartH;
+
+            let points = equityCurve.map((v, i) => `${getX(i)},${getY(v)}`).join(' ');
+            let zeroY = getY(0);
+
+            const chartHtml = `
+                <div style="margin-top:15px; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="color: #888; font-size: 0.7rem; margin-bottom: 5px;">📈 今日資金淨損益曲線 (全日趨勢)</div>
+                    <svg width="100%" height="100" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" style="overflow: visible;">
+                        <line x1="0" y1="${zeroY}" x2="${chartW}" y2="${zeroY}" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
+                        <polyline points="${points}" fill="none" stroke="#00f0ff" stroke-width="2" stroke-linejoin="round" />
+                    </svg>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.65rem; color: #666;">
+                        <span>0:00</span>
+                        <span>歷史總盈虧趨勢</span>
+                        <span>24:00</span>
+                    </div>
+                </div>
+            `;
+
             resultBox.innerHTML = `
-                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (全日模擬)</h4>
+                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V6 進階策略回測報告 (全日模擬)</h4>
                 <div style="font-size: 0.85rem; line-height: 1.6;">
                     今日總投入： <span style="color: #fff;">${totalCost} 元</span> (單純 3星 10期套餐 x ${mult}倍)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
-                    累積超級次數： <span style="color: #ffd700; font-weight: bold;">${winSuperCount}</span> 次<br>
+                    對中超級次數： <span style="color: #ffd700; font-weight: bold;">${winSuperCount}</span> 次 (僅視為參考)<br>
                     ---<br>
                     <div style="font-size: 1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
+                    ${chartHtml}
+                    <div style="font-size: 0.7rem; color: #888; margin-top: 8px;">* V6 規則：已過濾三連號、同尾數、並強化號碼分布落點。</div>
                 </div>
             `;
             localStorage.setItem('bingoBacktestData', JSON.stringify({
