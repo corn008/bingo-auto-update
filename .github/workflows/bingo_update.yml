@@ -1,0 +1,42 @@
+name: Daily Bingo Scraper
+
+on:
+  schedule:
+    # 台灣時間每天早上 7:00 到晚上 24:00，每 30 分鐘執行一次
+    # UTC 時間為 23:00 到隔天 16:00
+    - cron: '*/30 23-23,0-16 * * *'
+  workflow_dispatch: # 允許手動觸發
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium
+
+      - name: Run Scraper
+        run: python bingo_history_scraper.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add bingo_history_*.json
+          git commit -m "Auto-update bingo history [skip ci]" || echo "No changes to commit"
+          git push

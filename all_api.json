@@ -1,0 +1,105 @@
+{
+  "https://api.taiwanlottery.com/TLCAPIWeB/Common/Headers": {
+    "rtCode": 0,
+    "rtMsg": null,
+    "content": {
+      "commonHeader": {
+        "name": "2,000萬超級紅包",
+        "linkType": 0,
+        "linkUrl": "https://www.taiwanlottery.com/innerWeb?src=https://www.taiwanlottery.com/TLC_WEB/EVENT/115CNY/INSTANT.html"
+      },
+      "activityHeader": null,
+      "bonusHeader": {
+        "id": "4aaaa0f9e32b4a6f8339140bcef7f5f1",
+        "title": "115年春節大樂透促銷獎項",
+        "showResult": true,
+        "bigImg": "https://cdn.taiwanlottery.com.tw/app/Images/FncRed/20260123_114038717.png",
+        "smallImg": "https://cdn.taiwanlottery.com.tw/app/Images/FncRed/20260123_114008075.png",
+        "resultImg": "https://cdn.taiwanlottery.com.tw/app/Images/FncRed/20260123_114043936.png",
+        "historyImg": "https://cdn.taiwanlottery.com.tw/app/Images/FncRed/20260123_114015007.png",
+        "actHeaderName": "115年春節加碼",
+        "redName": "115年春節大樂透促銷獎項"
+      }
+    }
+  },
+  "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/LatestBingoResult": {
+    "rtCode": 0,
+    "rtMsg": null,
+    "content": {
+      "lotteryBingoLatestPost": {
+        "drawTerm": 115011844,
+        "dDate": "2026-02-28T12:50:00",
+        "eDate": "2026-06-01T00:00:00",
+        "bigShowOrder": [
+          "01",
+          "02",
+          "07",
+          "12",
+          "17",
+          "18",
+          "27",
+          "28",
+          "33",
+          "37",
+          "41",
+          "42",
+          "46",
+          "50",
+          "54",
+          "66",
+          "70",
+          "71",
+          "75",
+          "79"
+        ],
+        "openShowOrder": [
+          "27",
+          "07",
+          "75",
+          "42",
+          "12",
+          "01",
+          "70",
+          "79",
+          "17",
+          "41",
+          "50",
+          "46",
+          "02",
+          "54",
+          "18",
+          "33",
+          "37",
+          "66",
+          "28",
+          "71"
+        ],
+        "prizeNum": {
+          "bullEye": "71",
+          "highLow": "－",
+          "oddEven": "－"
+        }
+      }
+    }
+  },
+  "https://api.taiwanlottery.com/TLCAPIWeB/Common/FloatingButton": {
+    "rtCode": 0,
+    "rtMsg": null,
+    "content": {
+      "commonFloatingButtonList": [
+        {
+          "title": "2000萬超級紅包",
+          "picPath": "https://cdn.taiwanlottery.com.tw/app/Images/FloatBtns/20260119_095202597.png",
+          "linkType": 1,
+          "linkUrl": "https://www.taiwanlottery.com/innerWeb?src=https://www.taiwanlottery.com/TLC_WEB/EVENT/115CNY/INSTANT.html"
+        },
+        {
+          "title": "115年春節加碼",
+          "picPath": "https://cdn.taiwanlottery.com.tw/app/Images/FloatBtns/20260123_155121690.png",
+          "linkType": 1,
+          "linkUrl": "https://www.taiwanlottery.com/innerWeb?src=https://www.taiwanlottery.com/TLC_WEB/EVENT/115CNY/115CNY.html"
+        }
+      ]
+    }
+  }
+}

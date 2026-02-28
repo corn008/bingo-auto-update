@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Bingo 歷史開獎結果</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="background-animation">
+        <div class="glow-sphere sphere-1"></div>
+        <div class="glow-sphere sphere-2"></div>
+    </div>
+
+    <header>
+        <div class="header-container">
+            <h1 class="glow-text">BINGO <span>BINGO</span></h1>
+            <p class="subtitle">台灣彩券歷史開獎分析樞紐</p>
+
+            <div class="controls">
+                <input type="date" id="datePicker" class="neo-input" />
+                <button id="loadBtn" class="neo-btn">載入數據</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="statsPanel" class="glass-panel stats-panel hidden">
+            <!-- 統計數據可放此 -->
+            <div class="stat-item">
+                <span class="stat-label">總開出期數</span>
+                <span id="totalDraws" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">當前日期</span>
+                <span id="currentDateDisplay" class="stat-value">-</span>
+            </div>
+        </div>
+
+        <!-- 卡片容器 -->
+        <div id="resultsContainer" class="results-grid">
+            <!-- Data will be injected here via JS -->
+            <div class="loading-spinner" id="loading">讀取中...</div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
