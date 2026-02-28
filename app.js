@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML += `
-                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; width: 100%; max-width: 350px;">
-                    <span style="color: #fff; font-weight: bold; width: 70px; text-align: right; white-space: nowrap;">第 ${i + 1} 組:</span>
-                    <div class="balls-container small" style="margin: 0; min-width: 140px; justify-content: center; flex-wrap: nowrap;">${ballsHtml}</div>
-                    <div style="width: 80px; text-align: left; white-space: nowrap;">${resultText}</div>
+                <div style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 100%; overflow-x: auto; padding: 0 10px;">
+                    <span style="color: #fff; font-weight: bold; width: 65px; text-align: right; white-space: nowrap; flex-shrink: 0;">第 ${i + 1} 組:</span>
+                    <div class="balls-container small" style="margin: 0; min-width: auto; justify-content: center; flex-wrap: nowrap; flex-shrink: 0;">${ballsHtml}</div>
+                    <div style="width: 75px; text-align: left; white-space: nowrap; flex-shrink: 0; font-size: 0.95rem;">${resultText}</div>
                 </div>
             `;
         }
