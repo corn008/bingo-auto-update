@@ -44,9 +44,36 @@
             </div>
         </div>
 
+        <!-- 號碼頻率熱力分佈圖 -->
+        <div id="heatmapPanel" class="glass-panel hidden" style="margin-bottom: 30px; padding: 20px;">
+            <h2 class="ai-title" style="font-size: 1.4rem; margin-bottom: 15px;">🔥 全號碼頻率熱力分佈 (1-80)</h2>
+            <div id="heatmapGrid"
+                style="display: grid; grid-template-columns: repeat(10, 10fr); gap: 4px; max-width: 500px; margin: 0 auto;">
+            </div>
+            <div
+                style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; font-size: 0.75rem;">
+                <span style="color: #64c8ff;">❄️ 冷門</span>
+                <div
+                    style="width: 100px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #64c8ff, #ff6464);">
+                </div>
+                <span style="color: #ff6464;">🔥 熱門</span>
+            </div>
+        </div>
+
         <!-- AI 預測看版 -->
         <div id="aiPanel" class="glass-panel ai-panel hidden">
             <h2 class="ai-title">🤖 AI 大數據趨勢分析與推演</h2>
+
+            <!-- 回測功能區 -->
+            <div
+                style="text-align: center; margin-bottom: 25px; display: flex; flex-direction: column; align-items: center;">
+                <button id="btnBacktest" class="neo-btn"
+                    style="background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.4); width: auto; color: #00f0ff; font-size: 0.85rem; padding: 8px 20px; transition: all 0.3s ease;">🧪
+                    執行今日 AI 策略回測精算報告</button>
+                <div id="backtestResult"
+                    style="display: none; width: 100%; max-width: 450px; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.6); border-radius: 12px; border: 1px dashed rgba(0, 240, 255, 0.3); text-align: left;">
+                </div>
+            </div>
 
             <div class="ai-stats-row">
                 <div class="ai-stat-box hot">
@@ -81,16 +108,50 @@
                     <h4>推薦超級獎號押注</h4>
                     <div id="stSuper" class="balls-container small"></div>
                 </div>
-            </div>
-            <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
-                提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
-        </div>
+                <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
+                    提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
 
-        <!-- 卡片容器 -->
-        <div id="resultsContainer" class="results-grid">
-            <!-- Data will be injected here via JS -->
-            <div class="loading-spinner" id="loading">讀取中...</div>
-        </div>
+                <div
+                    style="text-align: center; margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center;">
+                    <label style="color: #fff; font-size: 0.95rem;">下注倍數：</label>
+                    <select id="betMultiplier" class="neo-input"
+                        style="width: 80px; padding: 5px; height: auto; text-align: center; color: #fff; background: rgba(0, 0, 0, 0.5);">
+                        <option value="1">1 倍</option>
+                        <option value="2">2 倍</option>
+                        <option value="5">5 倍</option>
+                        <option value="10">10 倍</option>
+                        <option value="20">20 倍</option>
+                        <option value="50">50 倍</option>
+                    </select>
+                    <button id="btnGen3Star" class="neo-btn"
+                        style="background: linear-gradient(135deg, #f093fb, #f5576c); width: auto; padding: 10px 30px;">🎯
+                        三星守株待兔 (連追 10 期)</button>
+                    <button id="btnClear3Star" class="neo-btn"
+                        style="background: rgba(255, 255, 255, 0.1); width: auto; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.2);">🗑️
+                        清空紀錄</button>
+                </div>
+                <div id="threeStarContainer" style="display: none; margin-top: 20px; text-align: center;">
+                    <h3 class="strategy-title">🎯 三星精選 1 組 (連追 10 期推演)</h3>
+                    <div id="nextDrawCountdownBox"
+                        style="margin-bottom: 15px; background: rgba(0, 240, 255, 0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.1); display: inline-block;">
+                        <div style="margin-bottom: 5px;">
+                            <span style="color: #64c8ff; font-weight: bold; font-size: 0.95rem;">🎯 下期預計期數：<span
+                                    id="nextDrawPeriod">--</span></span>
+                        </div>
+                        <span style="color: #aaa; font-size: 0.85rem;">⏳ 距離開獎剩餘：</span>
+                        <span id="nextDrawCountdown"
+                            style="color: #00f0ff; font-family: 'Courier New', monospace; font-weight: 800; font-size: 1.2rem;">--:--</span>
+                    </div>
+                    <div id="threeStarList" class="strategy-row"
+                        style="flex-direction: column; gap: 10px; align-items: center;"></div>
+                </div>
+            </div>
+
+            <!-- 卡片容器 -->
+            <div id="resultsContainer" class="results-grid">
+                <!-- Data will be injected here via JS -->
+                <div class="loading-spinner" id="loading">讀取中...</div>
+            </div>
     </main>
 
     <script src="app.js"></script>
