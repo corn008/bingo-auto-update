@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentHotNums = [];
     let currentColdNums = [];
+    let currentTrendNums = []; // Numbers appearing multiple times recently
+    let currentDueNums = [];   // Numbers that are hot today but have a small gap
     let currentLatestDraw = null;
     let currentLoadedData = [];
 
@@ -137,10 +139,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sets = [];
             for (let i = 0; i < 10; i++) {
-                const strat = Math.random() > 0.5 ? [2, 1] : [1, 2];
-                let nums = [...getRandom(currentHotNums, strat[0]), ...getRandom(currentColdNums, strat[1])];
-                nums.sort((a, b) => parseInt(a) - parseInt(b));
-                sets.push(nums);
+                // Advanced Selection Logic:
+                // Mix Trend (Recent Hit), Hot (Today Freq), and Due (Statistical Gap)
+                let pool = [];
+                const r = Math.random();
+
+                if (r > 0.7) {
+                    // Strategy A: Trend Following (2 Trend + 1 Hot)
+                    pool = [...getRandom(currentTrendNums, 2), ...getRandom(currentHotNums, 1)];
+                } else if (r > 0.3) {
+                    // Strategy B: Balanced (1 Trend + 1 Hot + 1 Due)
+                    pool = [...getRandom(currentTrendNums, 1), ...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1)];
+                } else {
+                    // Strategy C: Surprise (1 Hot + 2 Due/Cold)
+                    pool = [...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1), ...getRandom(currentColdNums, 1)];
+                }
+
+                // Ensure uniqueness and valid length
+                let finalNums = Array.from(new Set(pool));
+                while (finalNums.length < 3) {
+                    let extra = getRandom(currentHotNums, 1)[0];
+                    if (!finalNums.includes(extra)) finalNums.push(extra);
+                }
+
+                finalNums.sort((a, b) => parseInt(a) - parseInt(b));
+                sets.push(finalNums);
             }
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -397,8 +420,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return arr.map(n => `<div class="ball ${isSuper ? 'super' : ''}">${n}</div>`).join('');
         };
 
+        // --- Advanced Statistical Inference ---
+        // 1. Trend Analysis (Last 5 draws)
+        const last5 = data.slice(0, 5);
+        const last5Freq = {};
+        last5.forEach(d => {
+            const arr = d["獎號 (大小排序)"].split(',').map(n => n.trim());
+            arr.forEach(n => last5Freq[n] = (last5Freq[n] || 0) + 1);
+        });
+        const trendNums = Object.keys(last5Freq).filter(n => last5Freq[n] >= 2);
+
+        // 2. Gap Analysis (When was the last time it appeared?)
+        const dueNums = [];
+        hotNums.forEach(n => {
+            // If it's a hot num but NOT in the last 3 draws, it's "due"
+            let inLast3 = false;
+            for (let i = 0; i < 3 && i < data.length; i++) {
+                if (data[i]["獎號 (大小排序)"].includes(n)) { inLast3 = true; break; }
+            }
+            if (!inLast3) dueNums.push(n);
+        });
+
         currentHotNums = hotNums;
         currentColdNums = coldNums;
+        currentTrendNums = trendNums.length >= 3 ? trendNums : hotNums.slice(0, 5);
+        currentDueNums = dueNums.length >= 3 ? dueNums : sortedNums.slice(10, 20);
 
         document.getElementById('aiHotNums').innerHTML = createBallsStr(hotNums);
         document.getElementById('aiColdNums').innerHTML = createBallsStr(coldNums);
