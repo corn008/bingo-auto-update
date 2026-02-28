@@ -81,16 +81,26 @@
                     <h4>推薦超級獎號押注</h4>
                     <div id="stSuper" class="balls-container small"></div>
                 </div>
-            </div>
-            <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
-                提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
-        </div>
+                <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
+                    提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
 
-        <!-- 卡片容器 -->
-        <div id="resultsContainer" class="results-grid">
-            <!-- Data will be injected here via JS -->
-            <div class="loading-spinner" id="loading">讀取中...</div>
-        </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="btnGen3Star" class="neo-btn"
+                        style="background: linear-gradient(135deg, #f093fb, #f5576c); width: auto; padding: 10px 30px;">🎯
+                        一鍵推演三星 (10組)</button>
+                </div>
+                <div id="threeStarContainer" style="display: none; margin-top: 20px; text-align: center;">
+                    <h3 class="strategy-title">🎯 三星精選 10 組推演</h3>
+                    <div id="threeStarList" class="strategy-row"
+                        style="flex-direction: column; gap: 10px; align-items: center;"></div>
+                </div>
+            </div>
+
+            <!-- 卡片容器 -->
+            <div id="resultsContainer" class="results-grid">
+                <!-- Data will be injected here via JS -->
+                <div class="loading-spinner" id="loading">讀取中...</div>
+            </div>
     </main>
 
     <script src="app.js"></script>

@@ -14,12 +14,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultDate = `${year}-${month}-${day}`;
     datePicker.value = defaultDate;
 
+    let currentHotNums = [];
+    let currentColdNums = [];
+
     // Load data on start
     loadData(defaultDate);
 
     loadBtn.addEventListener('click', () => {
         loadData(datePicker.value);
     });
+
+    const btnGen3Star = document.getElementById('btnGen3Star');
+    if (btnGen3Star) {
+        btnGen3Star.addEventListener('click', () => {
+            const container = document.getElementById('threeStarContainer');
+            const list = document.getElementById('threeStarList');
+            container.style.display = 'block';
+            list.innerHTML = '';
+
+            const getRandom = (arr, n) => {
+                let result = new Array(n), len = arr.length, taken = new Array(len);
+                if (n > len) return arr;
+                while (n--) {
+                    let x = Math.floor(Math.random() * len);
+                    result[n] = arr[x in taken ? taken[x] : x];
+                    taken[x] = --len in taken ? taken[len] : len;
+                }
+                return result.sort((a, b) => parseInt(a) - parseInt(b));
+            };
+
+            for (let i = 1; i <= 10; i++) {
+                // Combine 2 hot and 1 cold or 1 hot and 2 cold randomly
+                const strat = Math.random() > 0.5 ? [2, 1] : [1, 2];
+                let nums = [...getRandom(currentHotNums, strat[0]), ...getRandom(currentColdNums, strat[1])];
+                nums.sort((a, b) => parseInt(a) - parseInt(b));
+
+                const ballsHtml = nums.map(n => `<div class="ball">${n}</div>`).join('');
+                list.innerHTML += `
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
+                        <span style="color: #fff; font-weight: bold; width: 60px; text-align: right;">第 ${i} 組:</span>
+                        <div class="balls-container small" style="margin: 0;">${ballsHtml}</div>
+                    </div>
+                `;
+            }
+        });
+    }
 
     async function loadData(dateStr) {
         resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過雲端網路抓取最即時的開獎資料...</div>';
@@ -236,6 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const createBallsStr = (arr, isSuper = false) => {
             return arr.map(n => `<div class="ball ${isSuper ? 'super' : ''}">${n}</div>`).join('');
         };
+
+        currentHotNums = hotNums;
+        currentColdNums = coldNums;
 
         document.getElementById('aiHotNums').innerHTML = createBallsStr(hotNums);
         document.getElementById('aiColdNums').innerHTML = createBallsStr(coldNums);
