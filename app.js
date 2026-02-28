@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentHotNums = [];
     let currentColdNums = [];
     let currentLatestDraw = null;
+    let currentLoadedData = [];
 
     // Load data on start
     loadData(defaultDate);
@@ -25,17 +26,71 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData(datePicker.value);
     });
 
+    let saved3StarData = JSON.parse(localStorage.getItem('bingo3StarData') || "null");
+
+    function render3StarPredictions() {
+        const container = document.getElementById('threeStarContainer');
+        const list = document.getElementById('threeStarList');
+        if (!saved3StarData) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        list.innerHTML = `<div style="font-size: 0.95rem; color: #aaa; margin-bottom: 15px;">🎯 目標對獎期數：<span style="color:#00f2fe; font-weight:bold;">${saved3StarData.targetPeriod}</span> 期</div>`;
+
+        // Check if the target period exists in currentLoadedData
+        const targetDraw = currentLoadedData.find(d => d["期別"] === saved3StarData.targetPeriod);
+
+        for (let i = 0; i < saved3StarData.sets.length; i++) {
+            const nums = saved3StarData.sets[i];
+            let matchCount = 0;
+            let ballsHtml = '';
+
+            nums.forEach(n => {
+                let isMatch = false;
+                if (targetDraw) {
+                    const drawNums = targetDraw["獎號 (大小排序)"] !== "N/A" ? targetDraw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+                    if (drawNums.includes(n)) {
+                        isMatch = true;
+                        matchCount++;
+                    }
+                }
+
+                if (isMatch) {
+                    ballsHtml += `<div class="ball" style="background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; border-color: #00ff00;">${n}</div>`;
+                } else {
+                    ballsHtml += `<div class="ball">${n}</div>`;
+                }
+            });
+
+            let resultText = '<span style="color: #aaa; font-weight: bold;">⏳ 等待開獎</span>';
+            if (targetDraw) {
+                if (matchCount === 3) resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
+                else if (matchCount === 2) resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
+                else if (matchCount === 1) resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
+                else resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
+            }
+
+            list.innerHTML += `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; width: 100%; max-width: 350px;">
+                    <span style="color: #fff; font-weight: bold; width: 70px; text-align: right; white-space: nowrap;">第 ${i + 1} 組:</span>
+                    <div class="balls-container small" style="margin: 0; min-width: 140px; justify-content: center; flex-wrap: nowrap;">${ballsHtml}</div>
+                    <div style="width: 80px; text-align: left; white-space: nowrap;">${resultText}</div>
+                </div>
+            `;
+        }
+    }
+
     const btnGen3Star = document.getElementById('btnGen3Star');
     if (btnGen3Star) {
         btnGen3Star.addEventListener('click', () => {
-            const container = document.getElementById('threeStarContainer');
-            const list = document.getElementById('threeStarList');
-            container.style.display = 'block';
-            list.innerHTML = '';
-
-            if (currentLatestDraw) {
-                list.innerHTML += `<div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px;">🎯 對獎基準：與畫面上最新一期 (<span style="color:#fff">${currentLatestDraw.period}</span>) 進行對獎。</div>`;
+            if (!currentLatestDraw || !currentLatestDraw.period) {
+                alert('請先等待資料載入完成！');
+                return;
             }
+
+            const targetPeriod = (parseInt(currentLatestDraw.period) + 1).toString();
 
             const getRandom = (arr, n) => {
                 let result = new Array(n), len = arr.length, taken = new Array(len);
@@ -48,39 +103,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return result.sort((a, b) => parseInt(a) - parseInt(b));
             };
 
-            for (let i = 1; i <= 10; i++) {
-                // Combine 2 hot and 1 cold or 1 hot and 2 cold randomly
+            const sets = [];
+            for (let i = 0; i < 10; i++) {
                 const strat = Math.random() > 0.5 ? [2, 1] : [1, 2];
                 let nums = [...getRandom(currentHotNums, strat[0]), ...getRandom(currentColdNums, strat[1])];
                 nums.sort((a, b) => parseInt(a) - parseInt(b));
-
-                let matchCount = 0;
-                const ballsHtml = nums.map(n => {
-                    let isMatch = false;
-                    if (currentLatestDraw && currentLatestDraw.nums.includes(n)) {
-                        isMatch = true;
-                        matchCount++;
-                    }
-                    if (isMatch) {
-                        return `<div class="ball" style="background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; border-color: #00ff00;">${n}</div>`;
-                    }
-                    return `<div class="ball">${n}</div>`;
-                }).join('');
-
-                let resultText = '';
-                if (matchCount === 3) resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
-                else if (matchCount === 2) resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
-                else if (matchCount === 1) resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
-                else resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
-
-                list.innerHTML += `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px; width: 100%;">
-                        <span style="color: #fff; font-weight: bold; width: 60px; text-align: right;">第 ${i} 組:</span>
-                        <div class="balls-container small" style="margin: 0; min-width: 120px; justify-content: center;">${ballsHtml}</div>
-                        <div style="width: 80px; text-align: left;">${resultText}</div>
-                    </div>
-                `;
+                sets.push(nums);
             }
+
+            saved3StarData = {
+                targetPeriod,
+                sets
+            };
+            localStorage.setItem('bingo3StarData', JSON.stringify(saved3StarData));
+            render3StarPredictions();
+
+            // Scroll to the predictions
+            document.getElementById('threeStarContainer').scrollIntoView({ behavior: 'smooth', block: 'end' });
         });
     }
 
@@ -188,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderData(data, dateStr) {
+        currentLoadedData = data || [];
         resultsContainer.innerHTML = '';
 
         if (!data || data.length === 0) {
@@ -202,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render AI Panel
         renderAIPredictions(data);
+        render3StarPredictions();
 
         data.forEach((draw, index) => {
             const card = document.createElement('div');
