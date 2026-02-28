@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!rows || rows.length === 0) {
                 // 有可能當天還沒開獎，或是日期太久遠
-                throw new Error(`找不到 ${dateStr} 的任何開獎紀錄，當天可能未開獎。`);
+                throw new Error('找不到歷史紀錄或尚未開獎。');
             }
 
             const scrapedData = [];
@@ -100,7 +100,27 @@ document.addEventListener('DOMContentLoaded', () => {
             renderData(scrapedData, dateStr);
 
         } catch (error) {
-            resultsContainer.innerHTML = `<div class="error-msg">⚠️ 錯誤: ${error.message}</div>`;
+            console.warn("連線代理抓取失敗，嘗試載入靜態歷史 JSON", error);
+
+            // 只要透過代理爬網站失敗（例如被 CORS 阻擋），馬上無縫切換為讀取 JSON 靜態包
+            try {
+                const jsonResponse = await fetch(`bingo_history_${dateStr}.json?t=${new Date().getTime()}`);
+                if (!jsonResponse.ok) {
+                    throw new Error(`找不到 ${dateStr} 的開獎紀錄。代理伺服器阻擋，且當日 JSON 未上傳。`);
+                }
+
+                const text = await jsonResponse.text();
+                // Cloudflare 404 falls back to HTML
+                if (text.trim().startsWith('<')) {
+                    throw new Error(`找不到 ${dateStr} 的 JSON 檔案。代理伺服器阻擋，且當日 JSON 未上傳。`);
+                }
+
+                const dataJSON = JSON.parse(text);
+                renderData(dataJSON, dateStr);
+
+            } catch (fallbackError) {
+                resultsContainer.innerHTML = `<div class="error-msg">⚠️ 錯誤: ${fallbackError.message}</div>`;
+            }
         }
     }
 
