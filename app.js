@@ -348,37 +348,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 let mySet = [];
-                const r = Math.random();
+                // V5 Strategy: Prioritize the strongest correlation pair today
+                let chosenPair = [];
 
-                // 1. Start with a "Seed" number (Trend or Hot)
-                const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
-                const seed = getRandom(seedArr, 1)[0];
-                mySet.push(seed);
-
-                // 2. Look for Correlation (What usually comes with the seed?)
-                const correlations = currentCorrelatedPairs[seed] || [];
-                if (correlations.length > 0 && Math.random() > 0.3) {
-                    // Pick the best correlation
-                    mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
-                } else {
-                    // Pick a "Due" number or another Trend
-                    mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
+                // Shuffle keys to avoid always picking the same numbers
+                const keys = Object.keys(currentCorrelatedPairs).sort(() => Math.random() - 0.5);
+                for (let k of keys) {
+                    const correlations = currentCorrelatedPairs[k];
+                    if (correlations && correlations.length > 0) {
+                        // We take the strongest correlation (first one in sorted list)
+                        chosenPair = [k, correlations[0]];
+                        // 50% chance to take the 2nd strongest to add diversity
+                        if (Math.random() > 0.5 && correlations.length > 1) chosenPair[1] = correlations[1];
+                        break;
+                    }
                 }
 
-                // 3. Fill the last one while checking Pattern Bias (Odd/Even/Big/Small)
+                if (chosenPair.length === 2) {
+                    mySet = [...chosenPair];
+                } else {
+                    mySet = getRandom(currentHotNums, 2);
+                }
+
+                // 3. Fill the 3rd number from Due or Trend lists with strict pattern checking
                 while (mySet.length < 3) {
-                    let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
+                    let pool = [...currentDueNums, ...currentTrendNums];
+                    let candidate = pool[Math.floor(Math.random() * pool.length)];
                     if (mySet.includes(candidate)) continue;
 
-                    // Filter based on Pattern Bias
                     const val = parseInt(candidate);
                     const isBig = val > 40;
                     const isOdd = val % 2 !== 0;
 
                     let pass = true;
-                    // If the day is heavily "Big", try to match it 70% of the time
-                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.4) pass = false;
-                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.4) pass = false;
+                    // V5 applies stricter pattern weights (80% match rate)
+                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.2) pass = false;
+                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.2) pass = false;
 
                     if (pass) mySet.push(candidate);
                 }
@@ -400,8 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (let i = 0; i < dailyDraws.length; i += 10) {
                 const mySet = getAISet(); // Generate the "chase" set for this 10-draw block
+                let alreadyHit3 = false; // Flag to stop betting in this 10-draw block
 
                 for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
+                    if (alreadyHit3) break; // EARLY EXIT: Stop if we already won the 3-star jackpot
+
                     const draw = dailyDraws[i + j];
                     const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
                     if (drawNums.length === 0) continue;
@@ -412,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (matches === 3) {
                         totalWin += 500 * mult;
                         win3Count++;
+                        alreadyHit3 = true; // Set flag to exit loop for this 10-draw block
                     } else if (matches === 2) {
                         totalWin += 50 * mult;
                         win2Count++;
@@ -423,9 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const netColor = net >= 0 ? '#00ff00' : '#ff4b4b';
 
             resultBox.innerHTML = `
-                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日回測報告 (${currentLoadedData.length} 期全追模式)</h4>
+                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (${currentLoadedData.length} 期)</h4>
                 <div style="font-size: 0.9rem; line-height: 1.6;">
-                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (每 10 期追一組 x ${mult}倍)<br>
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (守 10 期 & 中三星即止模式)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
