@@ -113,53 +113,77 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.display = 'block';
         const multiplier = saved3StarData.multiplier || 1;
         const chaseCount = (saved3StarData.targetPeriods || []).length;
-        let totalSpent = 25 * multiplier * chaseCount;
+        // Cost: $25 for 3-star + $25 for Super = $50 per draw
+        let totalSpent = 50 * multiplier * chaseCount;
         let totalWon = 0;
         let drawsFinished = 0;
 
         const mySet = saved3StarData.set || [];
+        const mySuper = saved3StarData.superNum || "--";
         const setHtml = mySet.map(n => `<div class="ball">${n}</div>`).join('');
+        const superHtml = `<div class="ball super" style="width:30px; height:30px; font-size:0.9rem;">${mySuper}</div>`;
 
         list.innerHTML = `
-            <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; max-width: 400px;">
-                <div style="color: #00f0ff; font-size: 0.9rem; margin-bottom: 10px;">💎 守株待兔號碼 (連追 ${chaseCount} 期)</div>
-                <div class="balls-container" style="justify-content: center; margin-bottom: 5px;">${setHtml}</div>
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 100%; max-width: 400px; text-align: left;">
+                <div style="color: #00f0ff; font-size: 0.85rem; margin-bottom: 8px;">💎 守株待兔方案：</div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                        <div style="color: #aaa; font-size: 0.75rem; margin-bottom: 5px;">【三星推演】</div>
+                        <div class="balls-container" style="justify-content: flex-start;">${setHtml}</div>
+                    </div>
+                    <div>
+                        <div style="color: #ffd700; font-size: 0.75rem; margin-bottom: 5px;">【超級玩法】</div>
+                        <div class="balls-container" style="justify-content: flex-start;">${superHtml}</div>
+                    </div>
+                </div>
+                <div style="color: #666; font-size: 0.75rem; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 5px;">
+                    規則：每期 3星($25) + 猜超級($25) = $50 | 追 ${chaseCount} 期
+                </div>
             </div>
             <div style="width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 8px;">
         `;
 
         (saved3StarData.targetPeriods || []).forEach((period, idx) => {
             const targetDraw = currentLoadedData.find(d => d["期別"] === period);
-            let matchCount = 0;
             let resultText = '<span style="color: #aaa; font-weight: bold;">⏳ 等待開獎</span>';
-            let ballsMatchHtml = '';
+            let actualDrawInfo = '';
 
             if (targetDraw) {
                 drawsFinished++;
                 const drawNums = targetDraw["獎號 (大小排序)"] !== "N/A" ? targetDraw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
-                mySet.forEach(n => {
-                    if (drawNums.includes(n)) {
-                        matchCount++;
-                    }
-                });
+                const actualSuperNum = targetDraw["超級獎號"];
 
-                if (matchCount === 3) {
-                    resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
+                let sMatched = (actualSuperNum === mySuper);
+                let hit3Count = 0;
+                mySet.forEach(n => { if (drawNums.includes(n)) hit3Count++; });
+
+                let wins = [];
+                if (hit3Count === 3) {
+                    wins.push('<span style="color: #ff00ff; font-weight: bold;">🎉 3星(中)</span>');
                     totalWon += 500 * multiplier;
-                } else if (matchCount === 2) {
-                    resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
+                } else if (hit3Count === 2) {
+                    wins.push('<span style="color: #ffaa00;">2星(中)</span>');
                     totalWon += 50 * multiplier;
-                } else if (matchCount === 1) {
-                    resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
-                } else {
-                    resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
                 }
+
+                if (sMatched) {
+                    wins.push('<span style="color: #ffd700; font-weight: bold;">🌟 超級(中)</span>');
+                    totalWon += 600 * multiplier;
+                }
+
+                if (wins.length > 0) resultText = wins.join(' | ');
+                else resultText = '<span style="color: #666;">摃龜</span>';
+
+                actualDrawInfo = `<span style="color:#888; font-size:0.75rem; margin-left:10px;">(超級獎號: <span style="color:${sMatched ? '#ffd700' : '#eee'}">${actualSuperNum}</span>)</span>`;
             }
 
-            // Small indicator for each period
             list.innerHTML += `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 15px; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.9rem;">
-                    <span style="color: #eee; font-weight: bold;">第 ${idx + 1} 期 <span style="color: #888; font-size: 0.8rem; margin-left:5px;">(${period})</span></span>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="text-align: left;">
+                        <span style="color: #eee; font-weight: bold;">Step ${idx + 1}</span> 
+                        <span style="color: #00f0ff; font-family: monospace; font-size: 0.85rem; margin-left:5px;">[${period}]</span>
+                        ${actualDrawInfo}
+                    </div>
                     <div>${resultText}</div>
                 </div>
             `;
@@ -174,15 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         list.innerHTML += `
             <div style="margin-top: 20px; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.3); width: 100%; max-width: 400px;">
-                <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💰 對獎結算 (進度: ${drawsFinished}/${chaseCount})</h4>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
-                    <span style="color: #aaa;">總下注 (每注25元 x ${chaseCount}期 x ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
+                <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💸 本次套餐結算 (進度: ${drawsFinished}/${chaseCount})</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                    <span style="color: #aaa;">總成本 (50元/期 x 10期 x ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
-                    <span style="color: #aaa;">累積中獎金額:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                    <span style="color: #aaa;">總獎金回籠:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
-                    <span style="color: #aaa;">今日淨利潤:</span><span>${profitHtml} 元</span>
+                <div style="display: flex; justify-content: space-between; font-size: 1rem; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
+                    <span style="color: #aaa;">本次推演淨損益:</span><span>${profitHtml} 元</span>
                 </div>
             </div>
         `;
@@ -199,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetPeriod = (parseInt(currentLatestDraw.period) + 1).toString();
 
             // --- Ultra-Advanced AI V3 Strategy ---
-            const getAISet = () => {
+            const getAIStrategy = () => {
                 const getRandom = (arr, n) => {
                     let res = new Array(n), l = arr.length, t = new Array(l);
                     if (n > l) return arr;
@@ -211,43 +235,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     return res;
                 };
 
+                // Pick the 3-star set
                 let mySet = [];
                 const r = Math.random();
-
-                // 1. Start with a "Seed" number (Trend or Hot)
                 const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
                 const seed = getRandom(seedArr, 1)[0];
                 mySet.push(seed);
-
-                // 2. Look for Correlation (What usually comes with the seed?)
                 const correlations = currentCorrelatedPairs[seed] || [];
                 if (correlations.length > 0 && Math.random() > 0.3) {
-                    // Pick the best correlation
                     mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
                 } else {
-                    // Pick a "Due" number or another Trend
                     mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
                 }
-
-                // 3. Fill the last one while checking Pattern Bias (Odd/Even/Big/Small)
                 while (mySet.length < 3) {
                     let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
                     if (mySet.includes(candidate)) continue;
-
-                    // Filter based on Pattern Bias
                     const val = parseInt(candidate);
-                    const isBig = val > 40;
-                    const isOdd = val % 2 !== 0;
-
-                    let pass = true;
-                    // If the day is heavily "Big", try to match it 70% of the time
-                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.4) pass = false;
-                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.4) pass = false;
-
-                    if (pass) mySet.push(candidate);
+                    if (currentPatternBias.big > 0.6 && val <= 40 && Math.random() > 0.4) continue;
+                    if (currentPatternBias.odd > 0.6 && val % 2 === 0 && Math.random() > 0.4) continue;
+                    mySet.push(candidate);
                 }
 
-                return mySet.sort((a, b) => parseInt(a) - parseInt(b));
+                // Pick the Super Number
+                // Use a different pool for super: top hot nums + top due nums
+                const superPool = [...currentHotNums, ...currentDueNums].filter((v, i, a) => a.indexOf(v) === i);
+                const superNum = getRandom(superPool, 1)[0] || (Math.floor(Math.random() * 80) + 1).toString().padStart(2, '0');
+
+                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)), superNum };
             };
 
             const targetBase = parseInt(currentLatestDraw.period);
@@ -259,8 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const betMultiplierEl = document.getElementById('betMultiplier');
             const multiplier = betMultiplierEl ? parseInt(betMultiplierEl.value || 1) : 1;
 
+            const strategy = getAIStrategy();
             saved3StarData = {
-                set: getAISet(),
+                set: strategy.set,
+                superNum: strategy.superNum,
                 targetPeriods,
                 multiplier
             };
@@ -335,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultBox.innerHTML = '<div style="color: #00f0ff;">🚀 正在精算歷史回測報告...</div>';
 
             // Helper to get random stats-based 3-star Set (Using current AI logic)
-            const getAISet = () => {
+            const getAIStrategy = () => {
                 const getRandom = (arr, n) => {
                     let res = new Array(n), l = arr.length, t = new Array(l);
                     if (n > l) return arr;
@@ -387,7 +403,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pass) mySet.push(candidate);
                 }
 
-                return mySet.sort((a, b) => parseInt(a) - parseInt(b));
+                const sPool = [...currentHotNums, ...currentDueNums].filter((v, i, a) => a.indexOf(v) === i);
+                const superNum = getRandom(sPool, 1)[0] || (Math.floor(Math.random() * 80) + 1).toString().padStart(2, '0');
+
+                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)), superNum };
             };
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -397,23 +416,25 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalWin = 0;
             let win3Count = 0;
             let win2Count = 0;
+            let winSuperCount = 0;
 
             // Simulate "1 set chase 10 draws" strategy throughout the day
             // We process data from oldest to newest for a realistic simulation of the day
             const dailyDraws = [...currentLoadedData].reverse();
 
             for (let i = 0; i < dailyDraws.length; i += 10) {
-                const mySet = getAISet(); // Generate the "chase" set for this 10-draw block
+                const strat = getAIStrategy();
 
-                // Charge for the full 10-draw pre-paid bundle
-                totalCost += 10 * 25 * mult;
+                // Charge for the full 10-draw pre-paid bundle (25+25=50 per draw)
+                totalCost += 10 * 50 * mult;
 
                 for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
                     const draw = dailyDraws[i + j];
                     const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+                    const actualSuper = draw["超級獎號"];
                     if (drawNums.length === 0) continue;
 
-                    let matches = mySet.filter(n => drawNums.includes(n)).length;
+                    let matches = strat.set.filter(n => drawNums.includes(n)).length;
 
                     if (matches === 3) {
                         totalWin += 500 * mult;
@@ -422,6 +443,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         totalWin += 50 * mult;
                         win2Count++;
                     }
+
+                    if (actualSuper === strat.superNum) {
+                        totalWin += 600 * mult;
+                        winSuperCount++;
+                    }
                 }
             }
 
@@ -429,14 +455,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const netColor = net >= 0 ? '#00ff00' : '#ff4b4b';
 
             resultBox.innerHTML = `
-                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (${currentLoadedData.length} 期)</h4>
-                <div style="font-size: 0.9rem; line-height: 1.6;">
-                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (10 期預付套餐模式 x ${mult}倍)<br>
+                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (全日模擬)</h4>
+                <div style="font-size: 0.85rem; line-height: 1.6;">
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (3星+超級 10期套餐 x ${mult}倍)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
+                    累積超級次數： <span style="color: #ffd700; font-weight: bold;">${winSuperCount}</span> 次<br>
                     ---<br>
-                    <div style="font-size: 1.1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
+                    <div style="font-size: 1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
                 </div>
             `;
             localStorage.setItem('bingoBacktestData', JSON.stringify({
