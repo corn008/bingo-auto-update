@@ -32,7 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`找不到 ${dateStr} 的開獎紀錄。請先執行 Python 爬蟲。`);
             }
 
-            const data = await response.json();
+            const text = await response.text();
+            if (text.trim().startsWith('<')) {
+                throw new Error(`找不到 ${dateStr} 的 JSON 檔案 (該日期尚未抓取或上傳)！`);
+            }
+
+            const data = JSON.parse(text);
             renderData(data, dateStr);
         } catch (error) {
             resultsContainer.innerHTML = `<div class="error-msg">⚠️ 錯誤: ${error.message}</div>`;
