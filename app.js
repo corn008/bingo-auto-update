@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentHotNums = [];
     let currentColdNums = [];
+    let currentLatestDraw = null;
 
     // Load data on start
     loadData(defaultDate);
@@ -31,6 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const list = document.getElementById('threeStarList');
             container.style.display = 'block';
             list.innerHTML = '';
+
+            if (currentLatestDraw) {
+                list.innerHTML += `<div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px;">🎯 對獎基準：與畫面上最新一期 (<span style="color:#fff">${currentLatestDraw.period}</span>) 進行對獎。</div>`;
+            }
 
             const getRandom = (arr, n) => {
                 let result = new Array(n), len = arr.length, taken = new Array(len);
@@ -49,11 +54,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 let nums = [...getRandom(currentHotNums, strat[0]), ...getRandom(currentColdNums, strat[1])];
                 nums.sort((a, b) => parseInt(a) - parseInt(b));
 
-                const ballsHtml = nums.map(n => `<div class="ball">${n}</div>`).join('');
+                let matchCount = 0;
+                const ballsHtml = nums.map(n => {
+                    let isMatch = false;
+                    if (currentLatestDraw && currentLatestDraw.nums.includes(n)) {
+                        isMatch = true;
+                        matchCount++;
+                    }
+                    if (isMatch) {
+                        return `<div class="ball" style="background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; border-color: #00ff00;">${n}</div>`;
+                    }
+                    return `<div class="ball">${n}</div>`;
+                }).join('');
+
+                let resultText = '';
+                if (matchCount === 3) resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
+                else if (matchCount === 2) resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
+                else if (matchCount === 1) resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
+                else resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
+
                 list.innerHTML += `
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px; width: 100%;">
                         <span style="color: #fff; font-weight: bold; width: 60px; text-align: right;">第 ${i} 組:</span>
-                        <div class="balls-container small" style="margin: 0;">${ballsHtml}</div>
+                        <div class="balls-container small" style="margin: 0; min-width: 120px; justify-content: center;">${ballsHtml}</div>
+                        <div style="width: 80px; text-align: left;">${resultText}</div>
                     </div>
                 `;
             }
@@ -229,6 +253,17 @@ document.addEventListener('DOMContentLoaded', () => {
             aiPanel.classList.add('hidden');
             return;
         }
+
+        // Save latest draw for 3-star matching
+        let numsStr = data[0]["獎號 (大小排序)"];
+        let drawnNums = [];
+        if (numsStr && numsStr !== "N/A") {
+            drawnNums = numsStr.split(',').map(n => n.trim());
+        }
+        currentLatestDraw = {
+            period: data[0]["期別"],
+            nums: drawnNums
+        };
 
         let allNums = [];
         let superNums = [];
