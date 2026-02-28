@@ -16,8 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentHotNums = [];
     let currentColdNums = [];
-    let currentTrendNums = []; // Numbers appearing multiple times recently
-    let currentDueNums = [];   // Numbers that are hot today but have a small gap
+    let currentTrendNums = [];
+    let currentDueNums = [];
+    let currentCorrelatedPairs = {}; // Analysis of numbers appearing together
+    let currentPatternBias = { big: 0.5, odd: 0.5 }; // General bias of the day
     let currentLatestDraw = null;
     let currentLoadedData = [];
 
@@ -169,44 +171,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const targetPeriod = (parseInt(currentLatestDraw.period) + 1).toString();
 
-            const getRandom = (arr, n) => {
-                let result = new Array(n), len = arr.length, taken = new Array(len);
-                if (n > len) return arr;
-                while (n--) {
-                    let x = Math.floor(Math.random() * len);
-                    result[n] = arr[x in taken ? taken[x] : x];
-                    taken[x] = --len in taken ? taken[len] : len;
+            // --- Ultra-Advanced AI V3 Strategy ---
+            const getAISet = () => {
+                const getRandom = (arr, n) => {
+                    let res = new Array(n), l = arr.length, t = new Array(l);
+                    if (n > l) return arr;
+                    while (n--) {
+                        let x = Math.floor(Math.random() * l);
+                        res[n] = arr[x in t ? t[x] : x];
+                        t[x] = --l in t ? t[l] : l;
+                    }
+                    return res;
+                };
+
+                let mySet = [];
+                const r = Math.random();
+
+                // 1. Start with a "Seed" number (Trend or Hot)
+                const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
+                const seed = getRandom(seedArr, 1)[0];
+                mySet.push(seed);
+
+                // 2. Look for Correlation (What usually comes with the seed?)
+                const correlations = currentCorrelatedPairs[seed] || [];
+                if (correlations.length > 0 && Math.random() > 0.3) {
+                    // Pick the best correlation
+                    mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
+                } else {
+                    // Pick a "Due" number or another Trend
+                    mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
                 }
-                return result.sort((a, b) => parseInt(a) - parseInt(b));
+
+                // 3. Fill the last one while checking Pattern Bias (Odd/Even/Big/Small)
+                while (mySet.length < 3) {
+                    let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
+                    if (mySet.includes(candidate)) continue;
+
+                    // Filter based on Pattern Bias
+                    const val = parseInt(candidate);
+                    const isBig = val > 40;
+                    const isOdd = val % 2 !== 0;
+
+                    let pass = true;
+                    // If the day is heavily "Big", try to match it 70% of the time
+                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.4) pass = false;
+                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.4) pass = false;
+
+                    if (pass) mySet.push(candidate);
+                }
+
+                return mySet.sort((a, b) => parseInt(a) - parseInt(b));
             };
 
             const sets = [];
             for (let i = 0; i < 10; i++) {
-                // Advanced Selection Logic:
-                // Mix Trend (Recent Hit), Hot (Today Freq), and Due (Statistical Gap)
-                let pool = [];
-                const r = Math.random();
-
-                if (r > 0.7) {
-                    // Strategy A: Trend Following (2 Trend + 1 Hot)
-                    pool = [...getRandom(currentTrendNums, 2), ...getRandom(currentHotNums, 1)];
-                } else if (r > 0.3) {
-                    // Strategy B: Balanced (1 Trend + 1 Hot + 1 Due)
-                    pool = [...getRandom(currentTrendNums, 1), ...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1)];
-                } else {
-                    // Strategy C: Surprise (1 Hot + 2 Due/Cold)
-                    pool = [...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1), ...getRandom(currentColdNums, 1)];
-                }
-
-                // Ensure uniqueness and valid length
-                let finalNums = Array.from(new Set(pool));
-                while (finalNums.length < 3) {
-                    let extra = getRandom(currentHotNums, 1)[0];
-                    if (!finalNums.includes(extra)) finalNums.push(extra);
-                }
-
-                finalNums.sort((a, b) => parseInt(a) - parseInt(b));
-                sets.push(finalNums);
+                sets.push(getAISet());
             }
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -299,12 +318,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return res;
                 };
+
+                let mySet = [];
                 const r = Math.random();
-                let nums = [];
-                if (r > 0.7) nums = [...getRandom(currentTrendNums, 2), ...getRandom(currentHotNums, 1)];
-                else if (r > 0.3) nums = [...getRandom(currentTrendNums, 1), ...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1)];
-                else nums = [...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1), ...getRandom(currentColdNums, 1)];
-                return Array.from(new Set(nums)).slice(0, 3);
+
+                // 1. Start with a "Seed" number (Trend or Hot)
+                const seedArr = r > 0.5 ? currentTrendNums : currentHotNums;
+                const seed = getRandom(seedArr, 1)[0];
+                mySet.push(seed);
+
+                // 2. Look for Correlation (What usually comes with the seed?)
+                const correlations = currentCorrelatedPairs[seed] || [];
+                if (correlations.length > 0 && Math.random() > 0.3) {
+                    // Pick the best correlation
+                    mySet.push(correlations[Math.floor(Math.random() * Math.min(3, correlations.length))]);
+                } else {
+                    // Pick a "Due" number or another Trend
+                    mySet.push(getRandom(Math.random() > 0.5 ? currentDueNums : currentTrendNums, 1)[0]);
+                }
+
+                // 3. Fill the last one while checking Pattern Bias (Odd/Even/Big/Small)
+                while (mySet.length < 3) {
+                    let candidate = getRandom([...currentHotNums, ...currentDueNums, ...currentTrendNums], 1)[0];
+                    if (mySet.includes(candidate)) continue;
+
+                    // Filter based on Pattern Bias
+                    const val = parseInt(candidate);
+                    const isBig = val > 40;
+                    const isOdd = val % 2 !== 0;
+
+                    let pass = true;
+                    // If the day is heavily "Big", try to match it 70% of the time
+                    if (currentPatternBias.big > 0.6 && !isBig && Math.random() > 0.4) pass = false;
+                    if (currentPatternBias.odd > 0.6 && !isOdd && Math.random() > 0.4) pass = false;
+
+                    if (pass) mySet.push(candidate);
+                }
+
+                return mySet.sort((a, b) => parseInt(a) - parseInt(b));
             };
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -344,6 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size: 1.1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
                 </div>
             `;
+
+            localStorage.setItem('bingoBacktestData', JSON.stringify({
+                date: currentDateDisplay.innerText,
+                html: resultBox.innerHTML
+            }));
+
             resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
     }
@@ -577,31 +634,67 @@ document.addEventListener('DOMContentLoaded', () => {
             return arr.map(n => `<div class="ball ${isSuper ? 'super' : ''}">${n}</div>`).join('');
         };
 
-        // --- Advanced Statistical Inference ---
-        // 1. Trend Analysis (Last 5 draws)
-        const last5 = data.slice(0, 5);
-        const last5Freq = {};
-        last5.forEach(d => {
+        // --- Advanced Statistical Inference V3 ---
+        // 1. Correlation Analysis (Which numbers appear together?)
+        const pairFreq = {}; // e.g., { "01": { "05": 3, "22": 1 } }
+        data.forEach(d => {
             const arr = d["獎號 (大小排序)"].split(',').map(n => n.trim());
-            arr.forEach(n => last5Freq[n] = (last5Freq[n] || 0) + 1);
+            for (let i = 0; i < arr.length; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    const a = arr[i], b = arr[j];
+                    if (!pairFreq[a]) pairFreq[a] = {};
+                    if (!pairFreq[b]) pairFreq[b] = {};
+                    pairFreq[a][b] = (pairFreq[a][b] || 0) + 1;
+                    pairFreq[b][a] = (pairFreq[b][a] || 0) + 1;
+                }
+            }
         });
-        const trendNums = Object.keys(last5Freq).filter(n => last5Freq[n] >= 2);
 
-        // 2. Gap Analysis (When was the last time it appeared?)
+        // Convert to sorted lists
+        const correlations = {};
+        Object.keys(pairFreq).forEach(n => {
+            correlations[n] = Object.keys(pairFreq[n]).sort((a, b) => pairFreq[n][b] - pairFreq[n][a]);
+        });
+
+        // 2. Trend Analysis (Last 8 draws)
+        const last8 = data.slice(0, 8);
+        const last8Freq = {};
+        last8.forEach(d => {
+            const arr = d["獎號 (大小排序)"].split(',').map(n => n.trim());
+            arr.forEach(n => last8Freq[n] = (last8Freq[n] || 0) + 1);
+        });
+        const trendNums = Object.keys(last8Freq).filter(n => last8Freq[n] >= 2);
+
+        // 3. Pattern Bias (Big/Small, Odd/Even)
+        let bigCount = 0, oddCount = 0, totalBallCount = 0;
+        data.forEach(d => {
+            const arr = d["獎號 (大小排序)"].split(',').map(n => n.trim());
+            arr.forEach(n => {
+                totalBallCount++;
+                if (parseInt(n) > 40) bigCount++;
+                if (parseInt(n) % 2 !== 0) oddCount++;
+            });
+        });
+
+        // 4. Gap Analysis
         const dueNums = [];
         hotNums.forEach(n => {
-            // If it's a hot num but NOT in the last 3 draws, it's "due"
-            let inLast3 = false;
-            for (let i = 0; i < 3 && i < data.length; i++) {
-                if (data[i]["獎號 (大小排序)"].includes(n)) { inLast3 = true; break; }
+            let inLast5 = false;
+            for (let i = 0; i < 5 && i < data.length; i++) {
+                if (data[i]["獎號 (大小排序)"].includes(n)) { inLast5 = true; break; }
             }
-            if (!inLast3) dueNums.push(n);
+            if (!inLast5) dueNums.push(n);
         });
 
         currentHotNums = hotNums;
         currentColdNums = coldNums;
-        currentTrendNums = trendNums.length >= 3 ? trendNums : hotNums.slice(0, 5);
+        currentTrendNums = trendNums.length >= 5 ? trendNums : hotNums.slice(0, 7);
         currentDueNums = dueNums.length >= 3 ? dueNums : sortedNums.slice(10, 20);
+        currentCorrelatedPairs = correlations;
+        currentPatternBias = {
+            big: bigCount / totalBallCount,
+            odd: oddCount / totalBallCount
+        };
 
         document.getElementById('aiHotNums').innerHTML = createBallsStr(hotNums);
         document.getElementById('aiColdNums').innerHTML = createBallsStr(coldNums);
@@ -631,5 +724,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render Heatmap
         renderHeatmap(numFreq, data.length);
+
+        // Check for persisted backtest result
+        const savedBT = JSON.parse(localStorage.getItem('bingoBacktestData') || "null");
+        const resultBox = document.getElementById('backtestResult');
+        if (savedBT && savedBT.date === currentDateDisplay.innerText) {
+            resultBox.innerHTML = savedBT.html;
+            resultBox.style.display = 'block';
+        } else {
+            resultBox.style.display = 'none';
+        }
     }
 });
