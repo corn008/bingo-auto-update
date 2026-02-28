@@ -84,7 +84,18 @@
                 <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
                     提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
 
-                <div style="text-align: center; margin-top: 20px;">
+                <div
+                    style="text-align: center; margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center;">
+                    <label style="color: #fff; font-size: 0.95rem;">下注倍數：</label>
+                    <select id="betMultiplier" class="neo-input"
+                        style="width: 80px; padding: 5px; height: auto; text-align: center; color: #fff; background: rgba(0, 0, 0, 0.5);">
+                        <option value="1">1 倍</option>
+                        <option value="2">2 倍</option>
+                        <option value="5">5 倍</option>
+                        <option value="10">10 倍</option>
+                        <option value="20">20 倍</option>
+                        <option value="50">50 倍</option>
+                    </select>
                     <button id="btnGen3Star" class="neo-btn"
                         style="background: linear-gradient(135deg, #f093fb, #f5576c); width: auto; padding: 10px 30px;">🎯
                         一鍵推演三星 (10組)</button>

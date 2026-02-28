@@ -42,6 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if the target period exists in currentLoadedData
         const targetDraw = currentLoadedData.find(d => d["期別"] === saved3StarData.targetPeriod);
 
+        const multiplier = saved3StarData.multiplier || 1;
+        let totalSpent = saved3StarData.sets.length * 25 * multiplier;
+        let totalWon = 0;
+
         for (let i = 0; i < saved3StarData.sets.length; i++) {
             const nums = saved3StarData.sets[i];
             let matchCount = 0;
@@ -66,10 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let resultText = '<span style="color: #aaa; font-weight: bold;">⏳ 等待開獎</span>';
             if (targetDraw) {
-                if (matchCount === 3) resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
-                else if (matchCount === 2) resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
-                else if (matchCount === 1) resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
-                else resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
+                if (matchCount === 3) {
+                    resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
+                    totalWon += 500 * multiplier;
+                } else if (matchCount === 2) {
+                    resultText = '<span style="color: #ffaa00; font-weight: bold;">🎯 中 2 球</span>';
+                    totalWon += 50 * multiplier;
+                } else if (matchCount === 1) {
+                    resultText = '<span style="color: #00ff00; font-weight: bold;">✅ 中 1 球</span>';
+                } else {
+                    resultText = '<span style="color: #888; font-weight: bold;">沒中</span>';
+                }
             }
 
             list.innerHTML += `
@@ -77,6 +88,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span style="color: #fff; font-weight: bold; width: 65px; text-align: right; white-space: nowrap; flex-shrink: 0;">第 ${i + 1} 組:</span>
                     <div class="balls-container small" style="margin: 0; min-width: auto; justify-content: center; flex-wrap: nowrap; flex-shrink: 0;">${ballsHtml}</div>
                     <div style="width: 75px; text-align: left; white-space: nowrap; flex-shrink: 0; font-size: 0.95rem;">${resultText}</div>
+                </div>
+            `;
+        }
+
+        if (targetDraw) {
+            let profit = totalWon - totalSpent;
+            let profitHtml = profit > 0 ? `<span style="color: #00ff00; font-weight: bold;">+${profit}</span>` :
+                profit === 0 ? `<span style="color: #aaa; font-weight: bold;">0</span>` :
+                    `<span style="color: #ff4b4b; font-weight: bold;">${profit}</span>`;
+            list.innerHTML += `
+                <div style="margin-top: 20px; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.3); width: 100%; max-width: 350px;">
+                    <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💰 對獎結算</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+                        <span style="color: #aaa;">總下注 (每注25元, ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+                        <span style="color: #aaa;">總中獎金額:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
+                        <span style="color: #aaa;">淨利潤:</span><span>${profitHtml} 元</span>
+                    </div>
                 </div>
             `;
         }
@@ -111,9 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 sets.push(nums);
             }
 
+            const betMultiplierEl = document.getElementById('betMultiplier');
+            const multiplier = betMultiplierEl ? parseInt(betMultiplierEl.value || 1) : 1;
+
             saved3StarData = {
                 targetPeriod,
-                sets
+                sets,
+                multiplier
             };
             localStorage.setItem('bingo3StarData', JSON.stringify(saved3StarData));
             render3StarPredictions();
