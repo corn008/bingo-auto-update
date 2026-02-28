@@ -394,28 +394,38 @@ document.addEventListener('DOMContentLoaded', () => {
             let win3Count = 0;
             let win2Count = 0;
 
-            // Simulate 10 sets for EACH draw in the day
-            currentLoadedData.forEach(draw => {
-                const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
-                if (drawNums.length === 0) return;
+            // Simulate "1 set chase 10 draws" strategy throughout the day
+            // We process data from oldest to newest for a realistic simulation of the day
+            const dailyDraws = [...currentLoadedData].reverse();
 
-                // For each draw, we pretend we bought 10 AI sets
-                for (let i = 0; i < 10; i++) {
-                    const mySet = getAISet();
+            for (let i = 0; i < dailyDraws.length; i += 10) {
+                const mySet = getAISet(); // Generate the "chase" set for this 10-draw block
+
+                for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
+                    const draw = dailyDraws[i + j];
+                    const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+                    if (drawNums.length === 0) continue;
+
                     totalCost += 25 * mult;
                     let matches = mySet.filter(n => drawNums.includes(n)).length;
-                    if (matches === 3) { totalWin += 500 * mult; win3Count++; }
-                    else if (matches === 2) { totalWin += 50 * mult; win2Count++; }
+
+                    if (matches === 3) {
+                        totalWin += 500 * mult;
+                        win3Count++;
+                    } else if (matches === 2) {
+                        totalWin += 50 * mult;
+                        win2Count++;
+                    }
                 }
-            });
+            }
 
             const net = totalWin - totalCost;
             const netColor = net >= 0 ? '#00ff00' : '#ff4b4b';
 
             resultBox.innerHTML = `
-                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日回測報告 (${currentLoadedData.length} 期全追)</h4>
+                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日回測報告 (${currentLoadedData.length} 期全追模式)</h4>
                 <div style="font-size: 0.9rem; line-height: 1.6;">
-                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (每期 10 組 x ${mult}倍)<br>
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (每 10 期追一組 x ${mult}倍)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
@@ -423,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size: 1.1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
                 </div>
             `;
-
             localStorage.setItem('bingoBacktestData', JSON.stringify({
                 date: currentDateDisplay.innerText,
                 html: resultBox.innerHTML
