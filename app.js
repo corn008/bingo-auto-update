@@ -22,23 +22,83 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadData(dateStr) {
-        resultsContainer.innerHTML = '<div class="loading-spinner">讀取資料中... (如果失敗請確認 Python 腳本已產出 json 檔案)</div>';
+        resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過雲端網路抓取最即時的開獎資料...</div>';
         statsPanel.classList.add('hidden');
+        document.getElementById('aiPanel').classList.add('hidden');
 
         try {
-            // Add a cache buster purely for safety if developing
-            const response = await fetch(`bingo_history_${dateStr}.json?t=${new Date().getTime()}`);
+            const dateFormatted = dateStr.replace(/-/g, "");
+            const targetUrl = `https://lotto.auzonet.com/bingobingo/list_${dateFormatted}.html`;
+
+            // 使用 allorigins 作為免費 CORS 代理服務
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+            const response = await fetch(proxyUrl);
             if (!response.ok) {
-                throw new Error(`找不到 ${dateStr} 的開獎紀錄。請先執行 Python 爬蟲。`);
+                throw new Error('無法連線至代理伺服器或來源網站。');
             }
 
-            const text = await response.text();
-            if (text.trim().startsWith('<')) {
-                throw new Error(`找不到 ${dateStr} 的 JSON 檔案 (該日期尚未抓取或上傳)！`);
+            const proxyData = await response.json();
+            const htmlContent = proxyData.contents;
+
+            // 將抓回來的 HTML 轉化為 DOM
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, "text/html");
+
+            // 尋找開獎紀錄的表格列
+            const rows = doc.querySelectorAll('tr.bingo_row');
+
+            if (!rows || rows.length === 0) {
+                // 有可能當天還沒開獎，或是日期太久遠
+                throw new Error(`找不到 ${dateStr} 的任何開獎紀錄，當天可能未開獎。`);
             }
 
-            const data = JSON.parse(text);
-            renderData(data, dateStr);
+            const scrapedData = [];
+
+            rows.forEach(row => {
+                const tds = row.querySelectorAll('td');
+                if (tds.length < 5) return;
+
+                const bTag = tds[0].querySelector('b');
+                if (!bTag) return;
+                const period = bTag.innerText.trim();
+
+                const divTags = tds[1].querySelectorAll('div');
+                const nums = [];
+                let superNum = "N/A";
+
+                divTags.forEach(div => {
+                    const txt = div.innerText.trim();
+                    if (!txt) return;
+                    nums.push(txt);
+
+                    // 若 className 包含結尾是 's' (如 bbns, bbrps 等，奧索用這個標記超級號)
+                    const cls = div.className || "";
+                    if (cls.match(/s$/)) {
+                        superNum = txt;
+                    }
+                });
+
+                nums.sort((a, b) => parseInt(a) - parseInt(b));
+
+                let highLow = tds[3].innerText.trim();
+                let oddEven = tds[4].innerText.trim();
+
+                if (!highLow) highLow = "－";
+                if (!oddEven) oddEven = "－";
+
+                scrapedData.push({
+                    "期別": period,
+                    "獎號 (大小排序)": nums.length > 0 ? nums.join(", ") : "N/A",
+                    "超級獎號": superNum,
+                    "猜大小": highLow,
+                    "猜單雙": oddEven
+                });
+            });
+
+            // 由於原始網頁是由上到下 (新到舊)，所以已經是我們想要的順序
+            renderData(scrapedData, dateStr);
+
         } catch (error) {
             resultsContainer.innerHTML = `<div class="error-msg">⚠️ 錯誤: ${error.message}</div>`;
         }
