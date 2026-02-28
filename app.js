@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.display = 'block';
         const multiplier = saved3StarData.multiplier || 1;
         const chaseCount = (saved3StarData.targetPeriods || []).length;
-        // Cost: $25 for 3-star + $25 for Super = $50 per draw
-        let totalSpent = 50 * multiplier * chaseCount;
+        // Cost: $25 for 3-star per draw (No Super add-on)
+        let totalSpent = 25 * multiplier * chaseCount;
         let totalWon = 0;
         let drawsFinished = 0;
 
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div style="color: #666; font-size: 0.75rem; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 5px;">
-                    規則：每期 3星($25) + 加購超級($25) = $50 | 追 ${chaseCount} 期
+                    規則：每期 3星 ($25) | 追 ${chaseCount} 期 (僅對獎，不計加購超級獎金)
                 </div>
             </div>
             <div style="width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 8px;">
@@ -161,8 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (sMatched) {
-                    wins.push('<span style="color: #ffd700; font-weight: bold;">🌟 超級(中獎!)</span>');
-                    totalWon += 600 * multiplier;
+                    wins.push('<span style="color: #ffd700; font-weight: bold;">🌟 超級(對中!)</span>');
+                    // No additional prize as requested (no "加購超級")
                 }
 
                 if (wins.length > 0) resultText = wins.join(' | ');
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="margin-top: 20px; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.3); width: 100%; max-width: 400px;">
                 <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💸 本次套餐結算 (進度: ${drawsFinished}/${chaseCount})</h4>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
-                    <span style="color: #aaa;">總成本 (50元/期 x 10期 x ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
+                    <span style="color: #aaa;">總成本 (25元/期 x 10期 x ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
                     <span style="color: #aaa;">總獎金回籠:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
@@ -410,8 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < dailyDraws.length; i += 10) {
                 const strat = getAIStrategy();
 
-                // Charge for the full 10-draw pre-paid bundle (25+25=50 per draw)
-                totalCost += 10 * 50 * mult;
+                // Charge for the full 10-draw pre-paid bundle (25 per draw)
+                totalCost += 10 * 25 * mult;
 
                 for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
                     const draw = dailyDraws[i + j];
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (actualSuper && strat.set.includes(actualSuper)) {
-                        totalWin += 600 * mult;
+                        // Visual match only, no prize added as requested
                         winSuperCount++;
                     }
                 }
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultBox.innerHTML = `
                 <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (全日模擬)</h4>
                 <div style="font-size: 0.85rem; line-height: 1.6;">
-                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (3星+超級 10期套餐 x ${mult}倍)<br>
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (單純 3星 10期套餐 x ${mult}倍)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
