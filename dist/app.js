@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateDisplay = document.getElementById('currentDateDisplay');
 
     // Default to local today YYYY-MM-DD
+    const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
@@ -51,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         totalDrawsEl.innerText = data.length;
         statsPanel.classList.remove('hidden');
 
+        // Render AI Panel
+        renderAIPredictions(data);
+
         data.forEach((draw, index) => {
             const card = document.createElement('div');
             card.className = 'draw-card';
@@ -93,5 +97,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
             resultsContainer.appendChild(card);
         });
+    }
+
+    function renderAIPredictions(data) {
+        const aiPanel = document.getElementById('aiPanel');
+        if (!data || data.length === 0) {
+            aiPanel.classList.add('hidden');
+            return;
+        }
+
+        let allNums = [];
+        let superNums = [];
+
+        data.forEach(draw => {
+            let numsStr = draw["獎號 (大小排序)"];
+            if (numsStr && numsStr !== "N/A") {
+                allNums.push(...numsStr.split(',').map(n => n.trim()));
+            }
+            let sNum = draw["超級獎號"];
+            if (sNum && sNum !== "N/A" && sNum !== "－") {
+                superNums.push(sNum.trim());
+            }
+        });
+
+        const numFreq = {};
+        allNums.forEach(n => numFreq[n] = (numFreq[n] || 0) + 1);
+
+        const superFreq = {};
+        superNums.forEach(n => superFreq[n] = (superFreq[n] || 0) + 1);
+
+        // Sort
+        const sortedNums = Object.keys(numFreq).sort((a, b) => numFreq[b] - numFreq[a]);
+        const sortedSupers = Object.keys(superFreq).sort((a, b) => superFreq[b] - superFreq[a]);
+
+        const hotNums = sortedNums.slice(0, 10);
+
+        // Find cold nums
+        const coldNums = [];
+        for (let i = 1; i <= 80; i++) {
+            let s = i.toString().padStart(2, '0');
+            if (!numFreq[s]) coldNums.push(s);
+        }
+        // Fill up to 10 if necessary
+        const leastCommon = [Math.max(...sortedNums.slice(-10))];
+        let idx = sortedNums.length - 1;
+        while (coldNums.length < 10 && idx >= 0) {
+            if (!coldNums.includes(sortedNums[idx])) coldNums.push(sortedNums[idx]);
+            idx--;
+        }
+
+        const hotSupers = sortedSupers.slice(0, 5);
+
+        const createBallsStr = (arr, isSuper = false) => {
+            return arr.map(n => `<div class="ball ${isSuper ? 'super' : ''}">${n}</div>`).join('');
+        };
+
+        document.getElementById('aiHotNums').innerHTML = createBallsStr(hotNums);
+        document.getElementById('aiColdNums').innerHTML = createBallsStr(coldNums);
+        document.getElementById('aiSuperNums').innerHTML = createBallsStr(hotSupers, true);
+
+        // Randomly select 5
+        const getRandom = (arr, n) => {
+            let result = new Array(n), len = arr.length, taken = new Array(len);
+            if (n > len) return arr;
+            while (n--) {
+                let x = Math.floor(Math.random() * len);
+                result[n] = arr[x in taken ? taken[x] : x];
+                taken[x] = --len in taken ? taken[len] : len;
+            }
+            return result.sort();
+        };
+
+        document.getElementById('stHot').innerHTML = createBallsStr(getRandom(hotNums, 5));
+        document.getElementById('stCold').innerHTML = createBallsStr(getRandom(coldNums, 5));
+
+        const mix = [...getRandom(hotNums, 3), ...getRandom(coldNums, 2)].sort();
+        document.getElementById('stMix').innerHTML = createBallsStr(mix);
+
+        document.getElementById('stSuper').innerHTML = createBallsStr(hotSupers.length > 0 ? [hotSupers[0], getRandom(hotSupers, 1)[0]].filter((v, i, a) => a.indexOf(v) === i) : [], true);
+
+        aiPanel.classList.remove('hidden');
     }
 });

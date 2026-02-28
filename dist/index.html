@@ -35,13 +35,55 @@
         <div id="statsPanel" class="glass-panel stats-panel hidden">
             <!-- 統計數據可放此 -->
             <div class="stat-item">
-                <span class="stat-label">總開出期數</span>
+                <span class="stat-label">當前載入期數</span>
                 <span id="totalDraws" class="stat-value">0</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">當前日期</span>
+                <span class="stat-label">當前選擇日期</span>
                 <span id="currentDateDisplay" class="stat-value">-</span>
             </div>
+        </div>
+
+        <!-- AI 預測看版 -->
+        <div id="aiPanel" class="glass-panel ai-panel hidden">
+            <h2 class="ai-title">🤖 AI 大數據趨勢分析與推演</h2>
+
+            <div class="ai-stats-row">
+                <div class="ai-stat-box hot">
+                    <h3>🔥 熱門號碼 (出現最多次)</h3>
+                    <div id="aiHotNums" class="ai-num-list"></div>
+                </div>
+                <div class="ai-stat-box cold">
+                    <h3>❄️ 冷門號碼 (出現最少次)</h3>
+                    <div id="aiColdNums" class="ai-num-list"></div>
+                </div>
+                <div class="ai-stat-box super">
+                    <h3>⭐ 最常出超級獎號</h3>
+                    <div id="aiSuperNums" class="ai-num-list"></div>
+                </div>
+            </div>
+
+            <h3 class="strategy-title">💡 策略推演 (隨機產出 5 星)</h3>
+            <div class="strategy-row">
+                <div class="strategy-card">
+                    <h4>策略一：追熱號 (絕對跟風)</h4>
+                    <div id="stHot" class="balls-container small"></div>
+                </div>
+                <div class="strategy-card">
+                    <h4>策略二：博冷門 (大反彈)</h4>
+                    <div id="stCold" class="balls-container small"></div>
+                </div>
+                <div class="strategy-card">
+                    <h4>策略三：3熱2冷 (穩健混搭)</h4>
+                    <div id="stMix" class="balls-container small"></div>
+                </div>
+                <div class="strategy-card outline">
+                    <h4>推薦超級獎號押注</h4>
+                    <div id="stSuper" class="balls-container small"></div>
+                </div>
+            </div>
+            <p style="text-align:center; color: #888; font-size: 0.8rem; margin-top:20px;">(⚠️
+                提醒：彩券為隨機機率遊戲，此為基於今日數據做出的純統計推薦，請理性投注！)</p>
         </div>
 
         <!-- 卡片容器 -->
