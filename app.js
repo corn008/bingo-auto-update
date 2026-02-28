@@ -119,9 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let drawsFinished = 0;
 
         const mySet = saved3StarData.set || [];
-        const mySuper = saved3StarData.superNum || "--";
         const setHtml = mySet.map(n => `<div class="ball">${n}</div>`).join('');
-        const superHtml = `<div class="ball super" style="width:30px; height:30px; font-size:0.9rem;">${mySuper}</div>`;
 
         list.innerHTML = `
             <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 100%; max-width: 400px; text-align: left;">
@@ -131,13 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="color: #aaa; font-size: 0.75rem; margin-bottom: 5px;">【三星推演】</div>
                         <div class="balls-container" style="justify-content: flex-start;">${setHtml}</div>
                     </div>
-                    <div>
-                        <div style="color: #ffd700; font-size: 0.75rem; margin-bottom: 5px;">【超級玩法】</div>
-                        <div class="balls-container" style="justify-content: flex-start;">${superHtml}</div>
-                    </div>
                 </div>
                 <div style="color: #666; font-size: 0.75rem; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 5px;">
-                    規則：每期 3星($25) + 猜超級($25) = $50 | 追 ${chaseCount} 期
+                    規則：每期 3星($25) + 加購超級($25) = $50 | 追 ${chaseCount} 期
                 </div>
             </div>
             <div style="width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 8px;">
@@ -153,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const drawNums = targetDraw["獎號 (大小排序)"] !== "N/A" ? targetDraw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
                 const actualSuperNum = targetDraw["超級獎號"];
 
-                let sMatched = (actualSuperNum === mySuper);
+                let sMatched = mySet.includes(actualSuperNum);
                 let hit3Count = 0;
                 mySet.forEach(n => { if (drawNums.includes(n)) hit3Count++; });
 
@@ -167,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (sMatched) {
-                    wins.push('<span style="color: #ffd700; font-weight: bold;">🌟 超級(中)</span>');
+                    wins.push('<span style="color: #ffd700; font-weight: bold;">🌟 超級(中獎!)</span>');
                     totalWon += 600 * multiplier;
                 }
 
@@ -256,12 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     mySet.push(candidate);
                 }
 
-                // Pick the Super Number
-                // Use a different pool for super: top hot nums + top due nums
-                const superPool = [...currentHotNums, ...currentDueNums].filter((v, i, a) => a.indexOf(v) === i);
-                const superNum = getRandom(superPool, 1)[0] || (Math.floor(Math.random() * 80) + 1).toString().padStart(2, '0');
-
-                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)), superNum };
+                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
             };
 
             const targetBase = parseInt(currentLatestDraw.period);
@@ -276,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const strategy = getAIStrategy();
             saved3StarData = {
                 set: strategy.set,
-                superNum: strategy.superNum,
                 targetPeriods,
                 multiplier
             };
@@ -403,10 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pass) mySet.push(candidate);
                 }
 
-                const sPool = [...currentHotNums, ...currentDueNums].filter((v, i, a) => a.indexOf(v) === i);
-                const superNum = getRandom(sPool, 1)[0] || (Math.floor(Math.random() * 80) + 1).toString().padStart(2, '0');
-
-                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)), superNum };
+                return { set: mySet.sort((a, b) => parseInt(a) - parseInt(b)) };
             };
 
             const betMultiplierEl = document.getElementById('betMultiplier');
@@ -444,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         win2Count++;
                     }
 
-                    if (actualSuper === strat.superNum) {
+                    if (actualSuper && strat.set.includes(actualSuper)) {
                         totalWin += 600 * mult;
                         winSuperCount++;
                     }
