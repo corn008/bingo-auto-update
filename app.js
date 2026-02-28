@@ -234,6 +234,120 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderHeatmap(numFreq, totalDraws) {
+        const panel = document.getElementById('heatmapPanel');
+        const grid = document.getElementById('heatmapGrid');
+        if (!grid) return;
+        panel.classList.remove('hidden');
+        grid.innerHTML = '';
+
+        const counts = Object.values(numFreq);
+        const max = Math.max(...counts, 1);
+        const min = Math.min(...counts);
+
+        for (let i = 1; i <= 80; i++) {
+            const num = i.toString().padStart(2, '0');
+            const count = numFreq[num] || 0;
+
+            // Calculate color interpolation: 0 (cold blue) to 1 (hot red)
+            const ratio = (count - min) / (max - min || 1);
+
+            // RGB Interpolation: #64c8ff (blue) to #ff6464 (red)
+            const r = Math.floor(100 + (255 - 100) * ratio);
+            const g = Math.floor(200 - (200 - 100) * ratio);
+            const b = Math.floor(255 - (255 - 100) * ratio);
+
+            const ballShadow = count > 0 ? `0 0 ${Math.floor(ratio * 10)}px rgba(${r},${g},${b},0.6)` : 'none';
+
+            grid.innerHTML += `
+                <div class="heatmap-cell" style="
+                    aspect-ratio: 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(${r},${g},${b}, ${0.1 + ratio * 0.4});
+                    border: 1px solid rgba(${r},${g},${b}, 0.3);
+                    border-radius: 4px;
+                    box-shadow: ${ballShadow};
+                ">
+                    <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">${num}</span>
+                    <span style="font-size: 0.6rem; color: rgba(255,255,255,0.7);">${count}次</span>
+                </div>
+            `;
+        }
+    }
+
+    const btnBacktest = document.getElementById('btnBacktest');
+    if (btnBacktest) {
+        btnBacktest.addEventListener('click', () => {
+            if (!currentLoadedData || currentLoadedData.length === 0) return;
+
+            const resultBox = document.getElementById('backtestResult');
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = '<div style="color: #00f0ff;">🚀 正在精算歷史回測報告...</div>';
+
+            // Helper to get random stats-based 3-star Set (Using current AI logic)
+            const getAISet = () => {
+                const getRandom = (arr, n) => {
+                    let res = new Array(n), l = arr.length, t = new Array(l);
+                    if (n > l) return arr;
+                    while (n--) {
+                        let x = Math.floor(Math.random() * l);
+                        res[n] = arr[x in t ? t[x] : x];
+                        t[x] = --l in t ? t[l] : l;
+                    }
+                    return res;
+                };
+                const r = Math.random();
+                let nums = [];
+                if (r > 0.7) nums = [...getRandom(currentTrendNums, 2), ...getRandom(currentHotNums, 1)];
+                else if (r > 0.3) nums = [...getRandom(currentTrendNums, 1), ...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1)];
+                else nums = [...getRandom(currentHotNums, 1), ...getRandom(currentDueNums, 1), ...getRandom(currentColdNums, 1)];
+                return Array.from(new Set(nums)).slice(0, 3);
+            };
+
+            const betMultiplierEl = document.getElementById('betMultiplier');
+            const mult = betMultiplierEl ? parseInt(betMultiplierEl.value || 1) : 1;
+
+            let totalCost = 0;
+            let totalWin = 0;
+            let win3Count = 0;
+            let win2Count = 0;
+
+            // Simulate 10 sets for EACH draw in the day
+            currentLoadedData.forEach(draw => {
+                const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+                if (drawNums.length === 0) return;
+
+                // For each draw, we pretend we bought 10 AI sets
+                for (let i = 0; i < 10; i++) {
+                    const mySet = getAISet();
+                    totalCost += 25 * mult;
+                    let matches = mySet.filter(n => drawNums.includes(n)).length;
+                    if (matches === 3) { totalWin += 500 * mult; win3Count++; }
+                    else if (matches === 2) { totalWin += 50 * mult; win2Count++; }
+                }
+            });
+
+            const net = totalWin - totalCost;
+            const netColor = net >= 0 ? '#00ff00' : '#ff4b4b';
+
+            resultBox.innerHTML = `
+                <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日回測報告 (${currentLoadedData.length} 期全追)</h4>
+                <div style="font-size: 0.9rem; line-height: 1.6;">
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (每期 10 組 x ${mult}倍)<br>
+                    今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
+                    累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
+                    累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
+                    ---<br>
+                    <div style="font-size: 1.1rem; margin-top: 5px;">今日模擬淨損益： <span style="color: ${netColor}; font-weight: bold;">${net > 0 ? '+' : ''}${net} 元</span></div>
+                </div>
+            `;
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }
+
     async function loadData(dateStr) {
         resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過雲端網路抓取最即時的開獎資料...</div>';
         statsPanel.classList.add('hidden');
@@ -514,5 +628,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('stSuper').innerHTML = createBallsStr(hotSupers.length > 0 ? [hotSupers[0], getRandom(hotSupers, 1)[0]].filter((v, i, a) => a.indexOf(v) === i) : [], true);
 
         aiPanel.classList.remove('hidden');
+
+        // Render Heatmap
+        renderHeatmap(numFreq, data.length);
     }
 });
