@@ -24,6 +24,49 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load data on start
     loadData(defaultDate);
 
+    function updateCountdown() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const currentSec = now.getSeconds();
+
+        let targetMin = Math.ceil((currentMin + 1) / 5) * 5;
+        let targetHour = currentHour;
+
+        if (targetMin >= 60) {
+            targetMin = 0;
+            targetHour++;
+        }
+
+        // 營業時間：07:05 ~ 23:55 (每 5 分鐘一期)
+        const isClosed = (currentHour < 7 && currentMin < 5) || (currentHour >= 23 && currentMin >= 56);
+        const countdownEl = document.getElementById('nextDrawCountdown');
+
+        if (isClosed) {
+            countdownEl.innerText = "明日 07:05 開獎";
+            countdownEl.style.fontSize = "0.9rem";
+            return;
+        }
+
+        const targetDate = new Date(now);
+        targetDate.setHours(targetHour, targetMin, 0, 0);
+
+        const diff = targetDate - now;
+        const m = Math.floor(diff / 1000 / 60);
+        const s = Math.floor((diff / 1000) % 60);
+
+        countdownEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        countdownEl.style.fontSize = "1.5rem";
+
+        // 當倒數到 0 時同步更新資料
+        if (m === 0 && s === 0) {
+            setTimeout(() => loadData(datePicker.value), 2000);
+        }
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
     loadBtn.addEventListener('click', () => {
         loadData(datePicker.value);
     });
