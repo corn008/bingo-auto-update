@@ -286,8 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('bingo3StarData', JSON.stringify(saved3StarData));
             render3StarPredictions();
 
-            // Scroll to the predictions
-            document.getElementById('threeStarContainer').scrollIntoView({ behavior: 'smooth', block: 'end' });
+
         });
     }
 
@@ -518,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 html: resultBox.innerHTML
             }));
 
-            resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
         });
     }
 
