@@ -348,18 +348,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 let mySet = [];
-                // V5 Strategy: Prioritize the strongest correlation pair today
+                // V5 Strategy: Focus on correlations between HOT numbers
                 let chosenPair = [];
 
-                // Shuffle keys to avoid always picking the same numbers
-                const keys = Object.keys(currentCorrelatedPairs).sort(() => Math.random() - 0.5);
-                for (let k of keys) {
+                // Prioritize hot numbers to start the pair
+                const hotKeys = currentHotNums.length > 0 ? [...currentHotNums].sort(() => Math.random() - 0.5) : Object.keys(currentCorrelatedPairs).sort(() => Math.random() - 0.5);
+
+                for (let k of hotKeys) {
                     const correlations = currentCorrelatedPairs[k];
                     if (correlations && correlations.length > 0) {
-                        // We take the strongest correlation (first one in sorted list)
                         chosenPair = [k, correlations[0]];
-                        // 50% chance to take the 2nd strongest to add diversity
-                        if (Math.random() > 0.5 && correlations.length > 1) chosenPair[1] = correlations[1];
+                        if (Math.random() > 0.4 && correlations.length > 1) chosenPair[1] = correlations[1];
                         break;
                     }
                 }
@@ -405,22 +404,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (let i = 0; i < dailyDraws.length; i += 10) {
                 const mySet = getAISet(); // Generate the "chase" set for this 10-draw block
-                let alreadyHit3 = false; // Flag to stop betting in this 10-draw block
+
+                // Charge for the full 10-draw pre-paid bundle
+                totalCost += 10 * 25 * mult;
 
                 for (let j = 0; j < 10 && (i + j) < dailyDraws.length; j++) {
-                    if (alreadyHit3) break; // EARLY EXIT: Stop if we already won the 3-star jackpot
-
                     const draw = dailyDraws[i + j];
                     const drawNums = draw["獎號 (大小排序)"] !== "N/A" ? draw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
                     if (drawNums.length === 0) continue;
 
-                    totalCost += 25 * mult;
                     let matches = mySet.filter(n => drawNums.includes(n)).length;
 
                     if (matches === 3) {
                         totalWin += 500 * mult;
                         win3Count++;
-                        alreadyHit3 = true; // Set flag to exit loop for this 10-draw block
                     } else if (matches === 2) {
                         totalWin += 50 * mult;
                         win2Count++;
@@ -434,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultBox.innerHTML = `
                 <h4 style="color: #00f0ff; margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">📊 今日 AI V5 策略回測報告 (${currentLoadedData.length} 期)</h4>
                 <div style="font-size: 0.9rem; line-height: 1.6;">
-                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (守 10 期 & 中三星即止模式)<br>
+                    今日總投入： <span style="color: #fff;">${totalCost} 元</span> (10 期預付套餐模式 x ${mult}倍)<br>
                     今日總回籠： <span style="color: #ffc832;">${totalWin} 元</span><br>
                     累積三星次數： <span style="color: #ff00ff; font-weight: bold;">${win3Count}</span> 次<br>
                     累積二星次數： <span style="color: #ffaa00;">${win2Count}</span> 次<br>
