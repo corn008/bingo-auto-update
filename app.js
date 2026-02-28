@@ -63,6 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         countdownEl.style.fontSize = "1.2rem";
 
+        // 更新下期預計期數
+        const periodEl = document.getElementById('nextDrawPeriod');
+        if (periodEl && currentLatestDraw && currentLatestDraw.period) {
+            periodEl.innerText = (parseInt(currentLatestDraw.period) + 1).toString();
+        }
+
         const isToday = (datePicker.value === defaultDate);
         if (!isToday) return;
 

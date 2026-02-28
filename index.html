@@ -125,16 +125,20 @@
                     </select>
                     <button id="btnGen3Star" class="neo-btn"
                         style="background: linear-gradient(135deg, #f093fb, #f5576c); width: auto; padding: 10px 30px;">🎯
-                        一鍵推演三星 (10組)</button>
+                        三星守株待兔 (連追 10 期)</button>
                     <button id="btnClear3Star" class="neo-btn"
                         style="background: rgba(255, 255, 255, 0.1); width: auto; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.2);">🗑️
                         清空紀錄</button>
                 </div>
                 <div id="threeStarContainer" style="display: none; margin-top: 20px; text-align: center;">
-                    <h3 class="strategy-title">🎯 三星精選 10 組推演</h3>
+                    <h3 class="strategy-title">🎯 三星精選 1 組 (連追 10 期推演)</h3>
                     <div id="nextDrawCountdownBox"
                         style="margin-bottom: 15px; background: rgba(0, 240, 255, 0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.1); display: inline-block;">
-                        <span style="color: #aaa; font-size: 0.85rem;">⏳ 距離下期開獎剩餘：</span>
+                        <div style="margin-bottom: 5px;">
+                            <span style="color: #64c8ff; font-weight: bold; font-size: 0.95rem;">🎯 下期預計期數：<span
+                                    id="nextDrawPeriod">--</span></span>
+                        </div>
+                        <span style="color: #aaa; font-size: 0.85rem;">⏳ 距離開獎剩餘：</span>
                         <span id="nextDrawCountdown"
                             style="color: #00f0ff; font-family: 'Courier New', monospace; font-weight: 800; font-size: 1.2rem;">--:--</span>
                     </div>
