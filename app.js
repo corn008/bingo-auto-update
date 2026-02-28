@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load data on start
     loadData(defaultDate);
 
+    let lastAutoLoad = 0;
     function updateCountdown() {
         const now = new Date();
         const currentHour = now.getHours();
@@ -60,9 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         countdownEl.style.fontSize = "1.2rem";
 
-        // 當倒數到 0 時同步更新資料
-        if (m === 0 && s === 0) {
-            setTimeout(() => loadData(datePicker.value), 2000);
+        // 當倒數到 0 到 90 秒之間，每 10 秒嘗試抓取一次最新資料
+        const secondsIntoInterval = (currentMin % 5) * 60 + currentSec;
+        if (secondsIntoInterval >= 2 && secondsIntoInterval <= 95 && currentSec % 10 === 0) {
+            if (Date.now() - lastAutoLoad > 5000) {
+                lastAutoLoad = Date.now();
+                loadData(datePicker.value);
+            }
         }
     }
 
@@ -84,39 +89,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         container.style.display = 'block';
-        list.innerHTML = `<div style="font-size: 0.95rem; color: #aaa; margin-bottom: 15px;">🎯 目標對獎期數：<span style="color:#00f2fe; font-weight:bold;">${saved3StarData.targetPeriod}</span> 期</div>`;
-
-        // Check if the target period exists in currentLoadedData
-        const targetDraw = currentLoadedData.find(d => d["期別"] === saved3StarData.targetPeriod);
-
         const multiplier = saved3StarData.multiplier || 1;
-        let totalSpent = saved3StarData.sets.length * 25 * multiplier;
+        const chaseCount = (saved3StarData.targetPeriods || []).length;
+        let totalSpent = 25 * multiplier * chaseCount;
         let totalWon = 0;
+        let drawsFinished = 0;
 
-        for (let i = 0; i < saved3StarData.sets.length; i++) {
-            const nums = saved3StarData.sets[i];
+        const mySet = saved3StarData.set || [];
+        const setHtml = mySet.map(n => `<div class="ball">${n}</div>`).join('');
+
+        list.innerHTML = `
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: inline-block; width: 100%; max-width: 400px;">
+                <div style="color: #00f0ff; font-size: 0.9rem; margin-bottom: 10px;">💎 守株待兔號碼 (連追 ${chaseCount} 期)</div>
+                <div class="balls-container" style="justify-content: center; margin-bottom: 5px;">${setHtml}</div>
+            </div>
+            <div style="width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 8px;">
+        `;
+
+        (saved3StarData.targetPeriods || []).forEach((period, idx) => {
+            const targetDraw = currentLoadedData.find(d => d["期別"] === period);
             let matchCount = 0;
-            let ballsHtml = '';
+            let resultText = '<span style="color: #aaa; font-weight: bold;">⏳ 等待開獎</span>';
+            let ballsMatchHtml = '';
 
-            nums.forEach(n => {
-                let isMatch = false;
-                if (targetDraw) {
-                    const drawNums = targetDraw["獎號 (大小排序)"] !== "N/A" ? targetDraw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+            if (targetDraw) {
+                drawsFinished++;
+                const drawNums = targetDraw["獎號 (大小排序)"] !== "N/A" ? targetDraw["獎號 (大小排序)"].split(',').map(s => s.trim()) : [];
+                mySet.forEach(n => {
                     if (drawNums.includes(n)) {
-                        isMatch = true;
                         matchCount++;
                     }
-                }
+                });
 
-                if (isMatch) {
-                    ballsHtml += `<div class="ball" style="background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; border-color: #00ff00;">${n}</div>`;
-                } else {
-                    ballsHtml += `<div class="ball">${n}</div>`;
-                }
-            });
-
-            let resultText = '<span style="color: #aaa; font-weight: bold;">⏳ 等待開獎</span>';
-            if (targetDraw) {
                 if (matchCount === 3) {
                     resultText = '<span style="color: #ff00ff; font-weight: bold;">🎉 三星全中</span>';
                     totalWon += 500 * multiplier;
@@ -130,35 +134,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Small indicator for each period
             list.innerHTML += `
-                <div style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 100%; overflow-x: auto; padding: 0 10px;">
-                    <span style="color: #fff; font-weight: bold; width: 65px; text-align: right; white-space: nowrap; flex-shrink: 0;">第 ${i + 1} 組:</span>
-                    <div class="balls-container small" style="margin: 0; min-width: auto; justify-content: center; flex-wrap: nowrap; flex-shrink: 0;">${ballsHtml}</div>
-                    <div style="width: 75px; text-align: left; white-space: nowrap; flex-shrink: 0; font-size: 0.95rem;">${resultText}</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 15px; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.9rem;">
+                    <span style="color: #eee; font-weight: bold;">第 ${idx + 1} 期 <span style="color: #888; font-size: 0.8rem; margin-left:5px;">(${period})</span></span>
+                    <div>${resultText}</div>
                 </div>
             `;
-        }
+        });
 
-        if (targetDraw) {
-            let profit = totalWon - totalSpent;
-            let profitHtml = profit > 0 ? `<span style="color: #00ff00; font-weight: bold;">+${profit}</span>` :
-                profit === 0 ? `<span style="color: #aaa; font-weight: bold;">0</span>` :
-                    `<span style="color: #ff4b4b; font-weight: bold;">${profit}</span>`;
-            list.innerHTML += `
-                <div style="margin-top: 20px; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.3); width: 100%; max-width: 350px;">
-                    <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💰 對獎結算</h4>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
-                        <span style="color: #aaa;">總下注 (每注25元, ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
-                        <span style="color: #aaa;">總中獎金額:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
-                        <span style="color: #aaa;">淨利潤:</span><span>${profitHtml} 元</span>
-                    </div>
+        list.innerHTML += '</div>';
+
+        let profit = totalWon - totalSpent;
+        let profitHtml = profit > 0 ? `<span style="color: #00ff00; font-weight: bold;">+${profit}</span>` :
+            profit === 0 ? `<span style="color: #aaa; font-weight: bold;">0</span>` :
+                `<span style="color: #ff4b4b; font-weight: bold;">${profit}</span>`;
+
+        list.innerHTML += `
+            <div style="margin-top: 20px; padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.3); width: 100%; max-width: 400px;">
+                <h4 style="color: #00f0ff; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid rgba(0,240,255,0.2); padding-bottom: 5px;">💰 對獎結算 (進度: ${drawsFinished}/${chaseCount})</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+                    <span style="color: #aaa;">總下注 (每注25元 x ${chaseCount}期 x ${multiplier}倍):</span><span style="color: #fff;">${totalSpent} 元</span>
                 </div>
-            `;
-        }
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+                    <span style="color: #aaa;">累積中獎金額:</span><span style="color: #ffc832; font-weight: bold;">${totalWon} 元</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
+                    <span style="color: #aaa;">今日淨利潤:</span><span>${profitHtml} 元</span>
+                </div>
+            </div>
+        `;
     }
 
     const btnGen3Star = document.getElementById('btnGen3Star');
@@ -223,17 +228,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return mySet.sort((a, b) => parseInt(a) - parseInt(b));
             };
 
-            const sets = [];
-            for (let i = 0; i < 10; i++) {
-                sets.push(getAISet());
+            const targetBase = parseInt(currentLatestDraw.period);
+            const targetPeriods = [];
+            for (let i = 1; i <= 10; i++) {
+                targetPeriods.push((targetBase + i).toString());
             }
 
             const betMultiplierEl = document.getElementById('betMultiplier');
             const multiplier = betMultiplierEl ? parseInt(betMultiplierEl.value || 1) : 1;
 
             saved3StarData = {
-                targetPeriod,
-                sets,
+                set: getAISet(),
+                targetPeriods,
                 multiplier
             };
             localStorage.setItem('bingo3StarData', JSON.stringify(saved3StarData));
@@ -406,24 +412,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadData(dateStr) {
-        resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過雲端網路抓取最即時的開獎資料...</div>';
+        resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過多重雲端通道抓取最即時開獎 (同步加速中)...</div>';
         statsPanel.classList.add('hidden');
         document.getElementById('aiPanel').classList.add('hidden');
 
+        const dateFormatted = dateStr.replace(/-/g, "");
+        const targetUrl = `https://lotto.auzonet.com/bingobingo/list_${dateFormatted}.html?t=${Date.now()}`;
+
+        // --- 多重代理並行競速 (Race) 以提升載入速度 ---
+        const proxies = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+        ];
+
+        async function fetchWithProxy(url) {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Failed to fetch from proxy: " + url);
+            const data = await resp.json();
+            // AllOrigins returns {contents: "..."}, others might return raw HTML string
+            return data.contents || data;
+        }
+
+        async function fetchRawWithProxy(url) {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Failed to fetch raw from proxy: " + url);
+            return await resp.text();
+        }
+
         try {
-            const dateFormatted = dateStr.replace(/-/g, "");
-            const targetUrl = `https://lotto.auzonet.com/bingobingo/list_${dateFormatted}.html`;
+            // 嘗試最快的代理通道
+            const htmlContent = await Promise.any([
+                fetchWithProxy(proxies[0]),
+                fetchRawWithProxy(proxies[1]),
+                fetchRawWithProxy(proxies[2])
+            ]);
 
-            // 使用 allorigins 作為免費 CORS 代理服務
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-
-            const response = await fetch(proxyUrl);
-            if (!response.ok) {
-                throw new Error('無法連線至代理伺服器或來源網站。');
-            }
-
-            const proxyData = await response.json();
-            const htmlContent = proxyData.contents;
+            if (!htmlContent || typeof htmlContent !== 'string') throw new Error("Invalid content received from proxy.");
 
             // 將抓回來的 HTML 轉化為 DOM
             const parser = new DOMParser();
@@ -518,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Update stats
-        currentDateDisplay.innerText = dateStr;
+        currentDateDisplay.innerText = `${dateStr} (於 ${new Date().toLocaleTimeString()} 完成更新)`;
         totalDrawsEl.innerText = data.length;
         statsPanel.classList.remove('hidden');
 
