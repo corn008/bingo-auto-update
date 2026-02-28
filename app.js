@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPatternBias = { big: 0.5, odd: 0.5 }; // General bias of the day
     let currentLatestDraw = null;
     let currentLoadedData = [];
+    let lastFetchedPeriod = "";
+    let isWaitingForNewDraw = false;
 
     // Load data on start
     loadData(defaultDate);
@@ -61,13 +63,27 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         countdownEl.style.fontSize = "1.2rem";
 
-        // 當倒數到 0 到 90 秒之間，每 10 秒嘗試抓取一次最新資料
+        const isToday = (datePicker.value === defaultDate);
+        if (!isToday) return;
+
         const secondsIntoInterval = (currentMin % 5) * 60 + currentSec;
-        if (secondsIntoInterval >= 2 && secondsIntoInterval <= 95 && currentSec % 10 === 0) {
-            if (Date.now() - lastAutoLoad > 5000) {
+
+        // 當倒數歸零時，開啟等待標記
+        if (m === 0 && s === 0) {
+            isWaitingForNewDraw = true;
+        }
+
+        // 只有在「等待新獎號」狀態下才刷新
+        // 開獎後 40秒~180秒 是最有可能出資料的時間，每 30 秒抓一次就好，減少對使用者的干擾
+        if (isWaitingForNewDraw && secondsIntoInterval >= 40 && secondsIntoInterval <= 180) {
+            if (currentSec % 30 === 0 && (Date.now() - lastAutoLoad > 5000)) {
                 lastAutoLoad = Date.now();
-                loadData(datePicker.value);
+                console.log("偵測到新期數時間，啟動智慧追蹤...");
+                loadData(datePicker.value, true);
             }
+        } else if (secondsIntoInterval > 180) {
+            // 超過 3 分鐘沒出就算了，停止頻繁重新整理
+            isWaitingForNewDraw = false;
         }
     }
 
@@ -411,10 +427,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function loadData(dateStr) {
-        resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過多重雲端通道抓取最即時開獎 (同步加速中)...</div>';
-        statsPanel.classList.add('hidden');
-        document.getElementById('aiPanel').classList.add('hidden');
+    async function loadData(dateStr, isSilent = false) {
+        if (!isSilent) {
+            resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過多重雲端通道抓取最即時開獎 (同步加速中)...</div>';
+            statsPanel.classList.add('hidden');
+            document.getElementById('aiPanel').classList.add('hidden');
+        }
 
         const dateFormatted = dateStr.replace(/-/g, "");
         const targetUrl = `https://lotto.auzonet.com/bingobingo/list_${dateFormatted}.html?t=${Date.now()}`;
@@ -535,6 +553,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderData(data, dateStr) {
         currentLoadedData = data || [];
+
+        // 檢查是否拿到了更新的期數
+        if (data && data.length > 0) {
+            const latest = data[0]["期別"];
+            if (latest !== lastFetchedPeriod) {
+                lastFetchedPeriod = latest;
+                isWaitingForNewDraw = false; // 拿到新資料了，停止追蹤
+                console.log("成功取得新期數:", latest);
+            }
+        }
+
         resultsContainer.innerHTML = '';
 
         if (!data || data.length === 0) {
