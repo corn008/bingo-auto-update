@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = Math.floor((diff / 1000) % 60);
 
         countdownEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        countdownEl.style.fontSize = "1.5rem";
+        countdownEl.style.fontSize = "1.2rem";
 
         // 當倒數到 0 時同步更新資料
         if (m === 0 && s === 0) {
