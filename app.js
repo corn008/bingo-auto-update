@@ -159,6 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnClear3Star = document.getElementById('btnClear3Star');
+    if (btnClear3Star) {
+        btnClear3Star.addEventListener('click', () => {
+            saved3StarData = null;
+            localStorage.removeItem('bingo3StarData');
+            render3StarPredictions();
+        });
+    }
+
     async function loadData(dateStr) {
         resultsContainer.innerHTML = '<div class="loading-spinner">📡 正在透過雲端網路抓取最即時的開獎資料...</div>';
         statsPanel.classList.add('hidden');
